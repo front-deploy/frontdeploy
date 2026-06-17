@@ -143,6 +143,7 @@ export function SidePanel() {
             Axiom wallet and token intelligence is available below the launch workspace.
           </p>
         </section>
+        <SidePanelFooter />
       </main>
     )
   }
@@ -238,6 +239,7 @@ export function SidePanel() {
           <DeveloperReputationPanel tokenAddress={selected.address} context={selected.context} />
         ) : null}
       </section>
+      <SidePanelFooter />
     </main>
   )
 }
@@ -477,5 +479,24 @@ function PanelHeader() {
         Launch Radar
       </h1>
     </header>
+  )
+}
+
+function SidePanelFooter() {
+  return (
+    <footer className="mt-6 border-t border-axiom-border pt-3 text-xs font-semibold text-axiom-muted flex flex-col gap-2">
+      <div className="flex flex-col gap-1 bg-axiom-border/30 p-2 rounded-sm">
+        <span className="text-[10px] uppercase text-axiom-text">Frontdeploy Token ($FDP)</span>
+        <a 
+          href={`https://pump.fun/coin/${process.env.PLASMO_PUBLIC_FRONTDEPLOY_CA}`}
+          target="_blank" 
+          rel="noreferrer"
+          className="text-axiom-accent hover:underline break-all font-mono text-[10px]"
+        >
+          {process.env.PLASMO_PUBLIC_FRONTDEPLOY_CA}
+        </a>
+      </div>
+      <div>Version 1.0.0</div>
+    </footer>
   )
 }

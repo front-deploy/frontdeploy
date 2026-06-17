@@ -8,7 +8,20 @@ export function Hero() {
 
   return (
     <section className="hero">
-      <div className="hero-number fade-in" ref={addElement}>
+      <div className="fade-in stagger-1" ref={addElement} style={{ marginBottom: '32px', textAlign: 'center' }}>
+        <p style={{ fontSize: '0.875rem', color: 'var(--gray-500)', marginBottom: '8px', textTransform: 'uppercase', fontWeight: 600 }}>Frontdeploy Token ($FDP)</p>
+        <a 
+          href={`https://pump.fun/coin/${process.env.NEXT_PUBLIC_FRONTDEPLOY_CA}`}
+          target="_blank" 
+          rel="noreferrer"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 20px', backgroundColor: 'var(--gray-100)', border: '1px solid var(--gray-200)', borderRadius: '8px', color: 'var(--foreground)', textDecoration: 'none', transition: 'all 0.2s', fontWeight: 500, letterSpacing: '0.5px', wordBreak: 'break-all' }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--gray-200)'; e.currentTarget.style.borderColor = 'var(--foreground)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--gray-100)'; e.currentTarget.style.borderColor = 'var(--gray-200)'; }}
+        >
+          CA: {process.env.NEXT_PUBLIC_FRONTDEPLOY_CA}
+        </a>
+      </div>
+      <div className="hero-number fade-in stagger-2" ref={addElement}>
         001 — Launch Intelligence
       </div>
       <div className="hero-brand-row">
@@ -66,14 +79,16 @@ export function Hero() {
           </svg>
         </a>
       </div>
-      <div className="hero-meta fade-in stagger-4" ref={addElement}>
+
+
+      <div className="hero-meta fade-in stagger-5" ref={addElement}>
         Chrome Extension
         <br />
         Manifest V3
         <br />
         MIT Licensed
         <br />
-        v0.1.0
+        v1.0.0
       </div>
     </section>
   );
