@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest a read-only intelligence feature.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What trader workflow would this improve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Keep it read-only and privacy-preserving.
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - Overlay UI
+        - Wallet intelligence
+        - Token risk
+        - Provider integration
+        - Documentation
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Boundaries
+      options:
+        - label: This does not require wallet connection, private keys, seed phrases, auto trading, or copy trading.
+          required: true

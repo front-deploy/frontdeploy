@@ -1,0 +1,32 @@
+{
+  "name": "axiom-intelligence",
+  "displayName": "Frontdeploy",
+  "version": "0.1.0",
+  "description": "X-to-pump.fun launch radar and intelligence overlay for Solana trenchers.",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VLTCAP/frontdeploy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/VLTCAP/frontdeploy/issues"
+  },
+  "homepage": "https://github.com/VLTCAP/frontdeploy#readme",
+  "workspaces": [
+    "apps/extension",
+    "apps/api"
+  ],
+  "scripts": {
+    "dev": "npm --workspace @axiom-intelligence/extension run dev",
+    "build": "npm --workspace @axiom-intelligence/extension run build",
+    "typecheck": "npm --workspace @axiom-intelligence/extension run typecheck",
+    "audit:runtime": "npm audit --omit=dev --audit-level=moderate",
+    "verify": "npm --workspace @axiom-intelligence/extension run verify && npm run audit:runtime",
+    "api:dev": "npm --workspace @axiom-intelligence/api run dev",
+    "api:build": "npm --workspace @axiom-intelligence/api run build",
+    "api:verify": "npm --workspace @axiom-intelligence/api run verify",
+    "verify:all": "npm run verify && npm run api:verify"
+  },
+  "devDependencies": {}
+}

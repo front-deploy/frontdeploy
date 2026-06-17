@@ -1,0 +1,58 @@
+{
+  "name": "@axiom-intelligence/extension",
+  "displayName": "Frontdeploy",
+  "version": "0.1.0",
+  "description": "X-to-pump.fun launch radar and intelligence overlay for Solana trenchers.",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "dev": "plasmo dev",
+    "build": "plasmo build",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/**/*.test.ts",
+    "verify": "npm run typecheck && npm run test && npm run build"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.19",
+    "plasmo": "^0.90.5",
+    "postcss": "^8.4.38",
+    "svgo": "^3.3.3",
+    "tailwindcss": "^3.4.4",
+    "tsx": "^4.22.2",
+    "typescript": "^5.5.4"
+  },
+  "manifest": {
+    "manifest_version": 3,
+    "name": "Frontdeploy",
+    "version": "0.1.0",
+    "description": "X-to-pump.fun launch radar for Solana trenchers.",
+    "permissions": [
+      "storage",
+      "sidePanel"
+    ],
+    "host_permissions": [
+      "https://axiom.trade/*",
+      "https://x.com/*",
+      "https://*.x.com/*",
+      "https://twitter.com/*",
+      "https://*.twitter.com/*",
+      "https://pump.fun/*",
+      "http://127.0.0.1:8787/*",
+      "http://localhost:8787/*"
+    ],
+    "action": {
+      "default_title": "Frontdeploy",
+      "default_popup": "popup.html"
+    },
+    "side_panel": {
+      "default_path": "sidepanel.html"
+    }
+  }
+}

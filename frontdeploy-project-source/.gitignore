@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+.plasmo/
+.env
+.env.*
+!.env.example
+!api/.env.example
+!apps/api/.env.example
+*.log
+*.tsbuildinfo
+.DS_Store
