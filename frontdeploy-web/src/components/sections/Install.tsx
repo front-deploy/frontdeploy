@@ -33,7 +33,7 @@ export function Install() {
               unzipped folder
             </li>
             <li>
-              <span>6</span> Navigate to x.com or axiom.trade — Sora is now
+              <span>6</span> Navigate to x.com or axiom.trade — Frontdeploy is now
               active
             </li>
           </ol>

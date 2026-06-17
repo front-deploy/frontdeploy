@@ -58,7 +58,7 @@ npm run start
 
 ## Download
 
-The Chrome extension ZIP is served from `public/downloads/`. Clicking any **Download** button on the page will trigger a direct download of `sora-pump-os-chrome-mv3-prod.zip`.
+The Chrome extension ZIP is served from `public/downloads/`. Clicking any **Download** button on the page will trigger a direct download of `frontdeploy-mv3-prod.zip`.
 
 ## License
 

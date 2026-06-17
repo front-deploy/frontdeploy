@@ -2,7 +2,7 @@ export function Ticker() {
   return (
     <div className="ticker-section">
       <div className="ticker-track">
-        <span className="ticker-item">$SORA</span>
+        <span className="ticker-item">$FRONTDEPLOY</span>
         <span className="ticker-item">
           <em>Intelligence</em>
         </span>
@@ -15,7 +15,7 @@ export function Ticker() {
           <em>Axiom</em>
         </span>
         {/* Duplicated for seamless infinite scroll */}
-        <span className="ticker-item">$SORA</span>
+        <span className="ticker-item">$FRONTDEPLOY</span>
         <span className="ticker-item">
           <em>Intelligence</em>
         </span>

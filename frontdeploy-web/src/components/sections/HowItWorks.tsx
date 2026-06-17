@@ -31,7 +31,7 @@ export function HowItWorks() {
             <div>
               <h4>Scroll X/Twitter</h4>
               <p>
-                Browse normally. Sora&apos;s content script monitors replies from
+                Browse normally. Frontdeploy&apos;s content script monitors replies from
                 watched accounts and detects emerging narratives in real-time.
               </p>
             </div>
