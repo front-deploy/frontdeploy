@@ -209,10 +209,10 @@ function XLaunchPanel({ context }: { context: XReplyContext }) {
 
           {copied ? <p className="text-xs font-semibold text-axiom-good">Copied {copied}</p> : null}
 
-          <div className="mt-3 border-t border-axiom-border pt-3 flex flex-col gap-2">
+          <div className="mt-3 border-t border-axiom-border pt-3 flex flex-col gap-2 max-h-[300px] overflow-y-auto">
             <h3 className="text-xs font-bold uppercase text-axiom-muted mb-1">Direct Launch</h3>
             <WalletButton />
-            <FastLaunch initialDraft={{ name: draft.tokenName, symbol: draft.ticker, description: draft.description }} />
+            <FastLaunch initialDraft={{ name: draft.tokenName, symbol: draft.ticker, description: draft.description, twitter: draft.sourceUrl }} />
           </div>
 
           <ul className="space-y-1 border-t border-axiom-border pt-2">
