@@ -533,6 +533,37 @@ const LAUNCH_RADAR_CSS = `
 .axiom-x-launch-mount button:hover {
   background: #6b6b66;
 }
+[data-axiom-launch-dock] .flex-col, .axiom-x-launch-mount .flex-col { flex-direction: column; }
+[data-axiom-launch-dock] .gap-1, .axiom-x-launch-mount .gap-1 { gap: 4px; }
+[data-axiom-launch-dock] .w-full, .axiom-x-launch-mount .w-full { width: 100%; }
+[data-axiom-launch-dock] .w-16, .axiom-x-launch-mount .w-16 { width: 64px; }
+[data-axiom-launch-dock] .h-16, .axiom-x-launch-mount .h-16 { height: 64px; }
+[data-axiom-launch-dock] .w-2, .axiom-x-launch-mount .w-2 { width: 8px; }
+[data-axiom-launch-dock] .h-2, .axiom-x-launch-mount .h-2 { height: 8px; }
+[data-axiom-launch-dock] .flex-1, .axiom-x-launch-mount .flex-1 { flex: 1 1 0%; }
+[data-axiom-launch-dock] .min-h-\\[60px\\], .axiom-x-launch-mount .min-h-\\[60px\\] { min-height: 60px; }
+[data-axiom-launch-dock] .object-cover, .axiom-x-launch-mount .object-cover { object-fit: cover; }
+[data-axiom-launch-dock] .cursor-pointer, .axiom-x-launch-mount .cursor-pointer { cursor: pointer; }
+[data-axiom-launch-dock] .rounded, .axiom-x-launch-mount .rounded { border-radius: 4px; }
+[data-axiom-launch-dock] .rounded-full, .axiom-x-launch-mount .rounded-full { border-radius: 9999px; }
+[data-axiom-launch-dock] .bg-axiom-bad\\/10, .axiom-x-launch-mount .bg-axiom-bad\\/10 { background-color: rgba(225, 29, 72, 0.1); }
+[data-axiom-launch-dock] .bg-axiom-good\\/10, .axiom-x-launch-mount .bg-axiom-good\\/10 { background-color: rgba(0, 143, 90, 0.1); }
+[data-axiom-launch-dock] .border-axiom-bad\\/20, .axiom-x-launch-mount .border-axiom-bad\\/20 { border-color: rgba(225, 29, 72, 0.2); }
+[data-axiom-launch-dock] .border-axiom-good\\/20, .axiom-x-launch-mount .border-axiom-good\\/20 { border-color: rgba(0, 143, 90, 0.2); }
+[data-axiom-launch-dock] .text-axiom-bad, .axiom-x-launch-mount .text-axiom-bad { color: #e11d48; }
+[data-axiom-launch-dock] .text-axiom-warn, .axiom-x-launch-mount .text-axiom-warn { color: #d97706; }
+[data-axiom-launch-dock] .underline, .axiom-x-launch-mount .underline { text-decoration-line: underline; }
+[data-axiom-launch-dock] .transition-colors, .axiom-x-launch-mount .transition-colors { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+[data-axiom-launch-dock] .transition-opacity, .axiom-x-launch-mount .transition-opacity { transition-property: opacity; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
+[data-axiom-launch-dock] .hover\\:opacity-90:hover, .axiom-x-launch-mount .hover\\:opacity-90:hover { opacity: 0.9; }
+[data-axiom-launch-dock] .hover\\:bg-axiom-muted:hover, .axiom-x-launch-mount .hover\\:bg-axiom-muted:hover { background-color: #6b6b66; }
+[data-axiom-launch-dock] .focus\\:outline-none:focus, .axiom-x-launch-mount .focus\\:outline-none:focus { outline: 2px solid transparent; outline-offset: 2px; }
+[data-axiom-launch-dock] .py-1\\.5, .axiom-x-launch-mount .py-1\\.5 { padding-top: 6px; padding-bottom: 6px; }
+[data-axiom-launch-dock] .font-medium, .axiom-x-launch-mount .font-medium { font-weight: 500; }
+[data-axiom-launch-dock] .animate-pulse, .axiom-x-launch-mount .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+[data-axiom-launch-dock] .overflow-y-auto, .axiom-x-launch-mount .overflow-y-auto { overflow-y: auto; }
+[data-axiom-launch-dock] .max-h-\\[300px\\], .axiom-x-launch-mount .max-h-\\[300px\\] { max-height: 300px; }
 `
 
 startWhenReady()

@@ -44,14 +44,14 @@ export function WalletButton() {
         <button
           onClick={() => handleConnect("phantom")}
           disabled={loading}
-          className="flex-1 px-3 py-1.5 rounded bg-axiom-border text-axiom-text hover:bg-axiom-muted transition-colors text-sm"
+          className="flex-1 px-3 py-1.5 rounded bg-axiom-border text-white hover:bg-axiom-muted transition-colors text-sm"
         >
           {loading ? "..." : "Phantom"}
         </button>
         <button
           onClick={() => handleConnect("solflare")}
           disabled={loading}
-          className="flex-1 px-3 py-1.5 rounded bg-axiom-border text-axiom-text hover:bg-axiom-muted transition-colors text-sm"
+          className="flex-1 px-3 py-1.5 rounded bg-axiom-border text-white hover:bg-axiom-muted transition-colors text-sm"
         >
           Solflare
         </button>
