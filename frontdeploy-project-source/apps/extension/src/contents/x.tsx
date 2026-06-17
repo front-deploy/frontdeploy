@@ -12,8 +12,8 @@ import {
   type XReplyContext
 } from "../lib/xLaunchContext"
 import { saveSelectedLaunchContext } from "../lib/storage"
-import { WalletButton } from "../components/WalletButton"
-import { FastLaunch } from "../components/FastLaunch"
+import { WalletButton } from "../components/XWalletButton"
+import { FastLaunch } from "../components/XFastLaunch"
 
 export const config: PlasmoCSConfig = {
   matches: [
