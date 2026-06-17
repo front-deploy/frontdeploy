@@ -3,6 +3,7 @@ import { fastLaunch } from "../lib/popup-api";
 import type { FastLaunchDraft } from "../lib/messaging";
 import { getLaunchSettings, saveLaunchSettings, getSelectedLaunchContext } from "../lib/storage";
 import type { LaunchSettings } from "../lib/storage";
+import { createLaunchDraft } from "../lib/xLaunchContext";
 
 export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunchDraft> } = {}) {
   const [draft, setDraft] = useState<FastLaunchDraft>({
@@ -28,7 +29,8 @@ export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunch
     if (!initialDraft) {
       getSelectedLaunchContext().then(ctx => {
         if (ctx) {
-          setDraft(d => ({ ...d, name: ctx.authorName + " Token", description: ctx.text, twitter: ctx.url }));
+          const generatedDraft = createLaunchDraft(ctx);
+          setDraft(d => ({ ...d, name: generatedDraft.tokenName, symbol: generatedDraft.ticker, description: generatedDraft.description, twitter: generatedDraft.sourceUrl }));
         }
       });
     }
