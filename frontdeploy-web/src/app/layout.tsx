@@ -19,9 +19,9 @@ export const metadata: Metadata = {
   description:
     "AI-powered X-to-pump.fun launch radar for Solana. Scan narratives, generate launch drafts, deploy faster.",
   icons: {
-    icon: "/logo.jpeg",
-    shortcut: "/logo.jpeg",
-    apple: "/logo.jpeg",
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
   },
   openGraph: {
     title: "Frontdeploy — Solana Launch Intelligence",
@@ -29,8 +29,8 @@ export const metadata: Metadata = {
       "AI-powered X-to-pump.fun launch radar for Solana. Scan narratives, generate launch drafts, deploy faster.",
     images: [
       {
-        url: "/logo.jpeg",
-        width: 1254,
+        url: "/logo.png",
+        width: 1200,
         height: 1254,
         alt: "Frontdeploy logo",
       },

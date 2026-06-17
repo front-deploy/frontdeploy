@@ -21,7 +21,7 @@ export function Hero() {
         </h1>
         <div className="hero-logo fade-in stagger-2" ref={addElement}>
           <Image
-            src="/logo.jpeg"
+            src="/logo.png"
             alt="Frontdeploy logo"
             width={1254}
             height={1254}
