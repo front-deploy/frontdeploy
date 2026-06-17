@@ -11,6 +11,11 @@ export const config: PlasmoCSConfig = {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const bgMsg = message as BackgroundToRelayMessage;
   
+  if ((message as any).type === "PING") {
+    sendResponse({ pong: true });
+    return true;
+  }
+  
   if (bgMsg.type === "BACKGROUND_STATUS_REQUEST") {
     const pageMsg: PageToBridgeMessage = { type: "wallet-status-request", id: bgMsg.id };
     window.postMessage({ channel: WALLET_CHANNEL, msg: pageMsg }, "*");
@@ -27,6 +32,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   
   if (bgMsg.type === "BACKGROUND_SIGN_SEND_REQUEST") {
     const pageMsg: PageToBridgeMessage = { type: "wallet-sign-send-request", id: bgMsg.id, provider: bgMsg.provider, txBase64: bgMsg.txBase64 };
+    window.postMessage({ channel: WALLET_CHANNEL, msg: pageMsg }, "*");
+    sendResponse({ received: true });
+    return true;
+  }
+  
+  if (bgMsg.type === "BACKGROUND_DISCONNECT_REQUEST") {
+    const pageMsg: PageToBridgeMessage = { type: "wallet-disconnect-request", id: bgMsg.id, provider: bgMsg.provider };
     window.postMessage({ channel: WALLET_CHANNEL, msg: pageMsg }, "*");
     sendResponse({ received: true });
     return true;
@@ -59,6 +71,16 @@ window.addEventListener("message", (event) => {
       id: msg.id,
       success: msg.success,
       ...(msg.publicKey ? { publicKey: msg.publicKey } : {}),
+      ...(msg.error ? { error: msg.error } : {})
+    };
+    chrome.runtime.sendMessage(relayMsg);
+  }
+
+  if (msg.type === "wallet-disconnect-response") {
+    const relayMsg: RelayToBackgroundMessage = {
+      type: "RELAY_DISCONNECT_RESPONSE",
+      id: msg.id,
+      success: msg.success,
       ...(msg.error ? { error: msg.error } : {})
     };
     chrome.runtime.sendMessage(relayMsg);

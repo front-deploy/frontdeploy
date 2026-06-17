@@ -1,4 +1,11 @@
-import type { FrontendToBackgroundMessage, FrontendWalletStatusResponse, FrontendWalletConnectResponse, FrontendFastLaunchResponse, FastLaunchDraft } from "./messaging";
+import type { 
+  FrontendToBackgroundMessage, 
+  FrontendWalletStatusResponse, 
+  FrontendWalletConnectResponse,
+  FrontendWalletDisconnectResponse,
+  FrontendFastLaunchResponse, 
+  FastLaunchDraft 
+} from "./messaging";
 
 export async function getWalletStatus(): Promise<FrontendWalletStatusResponse> {
   const msg: FrontendToBackgroundMessage = { type: "FRONTEND_WALLET_STATUS" };
@@ -14,7 +21,16 @@ export async function connectWallet(provider: "phantom" | "solflare" | "backpack
   try {
     return await chrome.runtime.sendMessage(msg);
   } catch (err: any) {
-    return { success: false, error: err.message };
+    return { success: false, error: err.message || "Failed to connect" };
+  }
+}
+
+export async function disconnectWallet(provider: "phantom" | "solflare" | "backpack"): Promise<FrontendWalletDisconnectResponse> {
+  const msg: FrontendToBackgroundMessage = { type: "FRONTEND_WALLET_DISCONNECT", provider };
+  try {
+    return await chrome.runtime.sendMessage(msg);
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to disconnect" };
   }
 }
 

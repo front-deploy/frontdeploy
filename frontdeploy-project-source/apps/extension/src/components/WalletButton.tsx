@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getWalletStatus, connectWallet } from "../lib/popup-api";
+import { getWalletStatus, connectWallet, disconnectWallet } from "../lib/popup-api";
 
 export function WalletButton() {
   const [connected, setConnected] = useState(false);
@@ -29,11 +29,31 @@ export function WalletButton() {
     setLoading(false);
   };
 
+  const handleDisconnect = async () => {
+    setLoading(true);
+    // Disconnect phantom by default since we only store connected state generally
+    await disconnectWallet("phantom");
+    setConnected(false);
+    setPubkey("");
+    setLoading(false);
+  };
+
   if (connected) {
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-axiom-good text-axiom-bg text-sm font-medium">
-        <div className="w-2 h-2 rounded-full bg-axiom-bg animate-pulse" />
-        {pubkey.slice(0, 4)}...{pubkey.slice(-4)}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between px-3 py-1.5 rounded bg-axiom-good text-axiom-bg text-sm font-medium">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-axiom-bg animate-pulse" />
+            {pubkey.slice(0, 4)}...{pubkey.slice(-4)}
+          </div>
+          <button 
+            onClick={handleDisconnect}
+            disabled={loading}
+            className="text-xs opacity-80 hover:opacity-100 uppercase"
+          >
+            Disconnect
+          </button>
+        </div>
       </div>
     );
   }

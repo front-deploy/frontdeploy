@@ -281,7 +281,7 @@ function XLaunchDock() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-[2147483647] w-[360px] max-w-[calc(100vw-2rem)] rounded-sm border border-axiom-border bg-white p-3 text-axiom-text shadow-none">
+    <div className="fixed bottom-4 right-4 z-[2147483647] w-[360px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-sm border border-axiom-border bg-white p-3 text-axiom-text shadow-none flex flex-col">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase text-axiom-muted">Frontdeploy</p>
@@ -335,15 +335,22 @@ function XLaunchDock() {
 
       {copied ? <p className="mt-2 text-xs font-semibold text-axiom-good">Copied {copied}</p> : null}
 
-      <div className="mt-3 border-t border-axiom-border pt-3 flex flex-col gap-2 max-h-[300px] overflow-y-auto">
+      <div className="mt-3 border-t border-axiom-border pt-3 flex flex-col gap-2 shrink-0">
         <h3 className="text-xs font-bold uppercase text-axiom-muted mb-1">Direct Launch</h3>
         <WalletButton />
-        <FastLaunch initialDraft={{ name: draft.tokenName, symbol: draft.ticker, description: draft.description }} />
+        <FastLaunch initialDraft={{ name: draft.tokenName, symbol: draft.ticker, description: draft.description, twitter: draft.sourceUrl }} />
       </div>
 
-      <p className="mt-2 border-t border-axiom-border pt-2 text-[11px] leading-4 text-axiom-muted">
+      <p className="mt-2 border-t border-axiom-border pt-2 text-[11px] leading-4 text-axiom-muted shrink-0">
         Manual launch only. Frontdeploy never connects wallet, requests SOL, or sends transactions.
       </p>
+
+      <button
+        type="button"
+        className="mt-3 w-full shrink-0 rounded-sm border border-axiom-border px-2 py-2 text-xs font-bold text-axiom-text hover:bg-axiom-bg transition"
+        onClick={() => setMinimized(true)}>
+        Hide / Minimize
+      </button>
     </div>
   )
 }

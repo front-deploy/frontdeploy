@@ -78,6 +78,41 @@ window.addEventListener("message", async (event) => {
     return;
   }
 
+  if (msg.type === "wallet-disconnect-request") {
+    const provider = getProvider(msg.provider);
+    if (!provider) {
+      const response: BridgeToPageMessage = {
+        type: "wallet-disconnect-response",
+        id: msg.id,
+        success: false,
+        error: `Provider ${msg.provider} not found`
+      };
+      window.postMessage({ channel: WALLET_CHANNEL, msg: response }, "*");
+      return;
+    }
+
+    try {
+      if (provider.disconnect) {
+        await provider.disconnect();
+      }
+      const response: BridgeToPageMessage = {
+        type: "wallet-disconnect-response",
+        id: msg.id,
+        success: true
+      };
+      window.postMessage({ channel: WALLET_CHANNEL, msg: response }, "*");
+    } catch (err: any) {
+      const response: BridgeToPageMessage = {
+        type: "wallet-disconnect-response",
+        id: msg.id,
+        success: false,
+        error: err.message || "Failed to disconnect"
+      };
+      window.postMessage({ channel: WALLET_CHANNEL, msg: response }, "*");
+    }
+    return;
+  }
+
   if (msg.type === "wallet-sign-send-request") {
     const provider = getProvider(msg.provider);
     if (!provider) {

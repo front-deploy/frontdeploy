@@ -30,6 +30,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleFastLaunch(msg.draft, sendResponse);
     return true;
   }
+
+  if (msg.type === "FRONTEND_WALLET_DISCONNECT") {
+    handleWalletDisconnect(msg.provider, sendResponse);
+    return true;
+  }
 });
 
 // Helper to find or create pump.fun create tab
@@ -54,7 +59,22 @@ async function ensurePumpFunTab(draft?: FastLaunchDraft): Promise<number> {
   const newTab = await chrome.tabs.create({ url: url.toString() });
   
   // Wait for tab to load so relay script is injected
-  await new Promise(resolve => setTimeout(resolve, 3000));
+  await new Promise<void>(resolve => {
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      chrome.tabs.sendMessage(newTab.id!, { type: "PING" }, (res) => {
+        if (!chrome.runtime.lastError && res?.pong) {
+          clearInterval(interval);
+          resolve();
+        } else if (attempts >= 30) {
+          // Timeout after 15 seconds
+          clearInterval(interval);
+          resolve();
+        }
+      });
+    }, 500);
+  });
   
   if (!newTab.id) throw new Error("Could not create pump.fun tab");
   return newTab.id;
@@ -117,6 +137,31 @@ async function handleWalletConnect(provider: "phantom" | "solflare" | "backpack"
       sendResponse({ success: false, error: "Connect timeout" });
     }, 30000); // 30s timeout for user approval
     
+  } catch (err: any) {
+    sendResponse({ success: false, error: err.message });
+  }
+}
+
+async function handleWalletDisconnect(provider: "phantom" | "solflare" | "backpack", sendResponse: (res: any) => void) {
+  try {
+    const tabId = await ensurePumpFunTab();
+    const id = Math.random().toString(36).substring(2, 15);
+    
+    const listener = (relayMsg: any) => {
+      if (relayMsg.type === "RELAY_DISCONNECT_RESPONSE" && relayMsg.id === id) {
+        chrome.runtime.onMessage.removeListener(listener);
+        sendResponse({ success: relayMsg.success, error: relayMsg.error });
+      }
+    };
+    chrome.runtime.onMessage.addListener(listener);
+    
+    const request: BackgroundToRelayMessage = { type: "BACKGROUND_DISCONNECT_REQUEST", id, provider };
+    chrome.tabs.sendMessage(tabId, request);
+    
+    setTimeout(() => {
+      chrome.runtime.onMessage.removeListener(listener);
+      sendResponse({ success: false, error: "Disconnect timeout" });
+    }, 10000);
   } catch (err: any) {
     sendResponse({ success: false, error: err.message });
   }
