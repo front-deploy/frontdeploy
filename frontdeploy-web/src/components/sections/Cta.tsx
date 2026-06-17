@@ -18,7 +18,7 @@ export function Cta() {
       </p>
       <div className="fade-in stagger-2" ref={addElement}>
         <a
-          href="/downloads/sora-pump-os-chrome-mv3-prod.zip"
+          href="/downloads/frontdeploy-mv3-prod.zip"
           download
           className="btn-primary"
         >
