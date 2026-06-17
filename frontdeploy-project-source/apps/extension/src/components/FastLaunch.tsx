@@ -4,12 +4,12 @@ import type { FastLaunchDraft } from "../lib/messaging";
 import { getLaunchSettings, saveLaunchSettings, getSelectedLaunchContext } from "../lib/storage";
 import type { LaunchSettings } from "../lib/storage";
 
-export function FastLaunch() {
+export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunchDraft> } = {}) {
   const [draft, setDraft] = useState<FastLaunchDraft>({
-    name: "",
-    symbol: "",
-    description: "",
-    image: ""
+    name: initialDraft?.name || "",
+    symbol: initialDraft?.symbol || "",
+    description: initialDraft?.description || "",
+    image: initialDraft?.image || ""
   });
   
   const [settings, setSettings] = useState<LaunchSettings>({
@@ -25,13 +25,14 @@ export function FastLaunch() {
 
   useEffect(() => {
     getLaunchSettings().then(setSettings);
-    getSelectedLaunchContext().then(ctx => {
-      if (ctx) {
-        // Just as an example, normally we'd run the full createLaunchDraft, but here we prefill what we have
-        setDraft(d => ({ ...d, name: ctx.authorName + " Token", description: ctx.text, twitter: ctx.url }));
-      }
-    });
-  }, []);
+    if (!initialDraft) {
+      getSelectedLaunchContext().then(ctx => {
+        if (ctx) {
+          setDraft(d => ({ ...d, name: ctx.authorName + " Token", description: ctx.text, twitter: ctx.url }));
+        }
+      });
+    }
+  }, [initialDraft]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

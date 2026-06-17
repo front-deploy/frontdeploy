@@ -12,6 +12,8 @@ import {
   type XReplyContext
 } from "../lib/xLaunchContext"
 import { saveSelectedLaunchContext } from "../lib/storage"
+import { WalletButton } from "../components/WalletButton"
+import { FastLaunch } from "../components/FastLaunch"
 
 export const config: PlasmoCSConfig = {
   matches: [
@@ -207,6 +209,12 @@ function XLaunchPanel({ context }: { context: XReplyContext }) {
 
           {copied ? <p className="text-xs font-semibold text-axiom-good">Copied {copied}</p> : null}
 
+          <div className="mt-3 border-t border-axiom-border pt-3 flex flex-col gap-2">
+            <h3 className="text-xs font-bold uppercase text-axiom-muted mb-1">Direct Launch</h3>
+            <WalletButton />
+            <FastLaunch initialDraft={{ name: draft.tokenName, symbol: draft.ticker, description: draft.description }} />
+          </div>
+
           <ul className="space-y-1 border-t border-axiom-border pt-2">
             {draft.warnings.map((warning) => (
               <li key={warning} className="text-[11px] leading-4 text-axiom-muted">
@@ -326,6 +334,12 @@ function XLaunchDock() {
       </div>
 
       {copied ? <p className="mt-2 text-xs font-semibold text-axiom-good">Copied {copied}</p> : null}
+
+      <div className="mt-3 border-t border-axiom-border pt-3 flex flex-col gap-2 max-h-[300px] overflow-y-auto">
+        <h3 className="text-xs font-bold uppercase text-axiom-muted mb-1">Direct Launch</h3>
+        <WalletButton />
+        <FastLaunch initialDraft={{ name: draft.tokenName, symbol: draft.ticker, description: draft.description }} />
+      </div>
 
       <p className="mt-2 border-t border-axiom-border pt-2 text-[11px] leading-4 text-axiom-muted">
         Manual launch only. Frontdeploy never connects wallet, requests SOL, or sends transactions.

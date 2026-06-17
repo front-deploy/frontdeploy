@@ -1,4 +1,4 @@
-import { Keypair } from "@solana/web3.js";
+import { Keypair, VersionedTransaction } from "@solana/web3.js";
 import type { FastLaunchDraft } from "./messaging";
 import { getLaunchSettings } from "./storage";
 
@@ -122,11 +122,6 @@ export async function buildPartialSignedCreateTx(
   const txBytes = new Uint8Array(await response.arrayBuffer());
   
   // We need to sign this tx with the mint keypair.
-  // We don't have VersionedTransaction imported here easily without the buffer polyfill everywhere.
-  // Actually, we can just return the raw bytes + mintKeypair and sign it where @solana/web3.js is used (like in the background or bridge).
-  // But wait, @solana/web3.js VersionedTransaction is fine in background. 
-  // We'll import it here.
-  const { VersionedTransaction } = await import("@solana/web3.js");
   const tx = VersionedTransaction.deserialize(txBytes);
   
   tx.sign([mintKeypair]);
