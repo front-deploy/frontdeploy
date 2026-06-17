@@ -18,7 +18,7 @@ export function Cta() {
       </p>
       <div className="fade-in stagger-2" ref={addElement}>
         <a
-          href="/downloads/frontdeploy-mv3-prod.zip"
+          href="/downloads/frontdeploy-extension.zip"
           download
           className="btn-primary"
         >

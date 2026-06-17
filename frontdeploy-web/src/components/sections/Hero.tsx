@@ -36,7 +36,7 @@ export function Hero() {
       </p>
       <div className="hero-actions fade-in stagger-3" ref={addElement} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
         <a
-          href="/downloads/frontdeploy-mv3-prod.zip"
+          href="/downloads/frontdeploy-extension.zip"
           download
           className="btn-primary"
         >
