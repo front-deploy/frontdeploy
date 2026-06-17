@@ -88,6 +88,24 @@ export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunch
       </div>
       
       <details className="mt-2 text-sm border-t border-axiom-border pt-2">
+        <summary className="cursor-pointer text-axiom-muted">Social Links (Optional)</summary>
+        <div className="flex flex-col gap-2 mt-2">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-axiom-muted">Website</label>
+            <input className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-sm text-axiom-text focus:outline-none" placeholder="https://" value={draft.website || ""} onChange={e => setDraft(d => ({ ...d, website: e.target.value }))} />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-axiom-muted">Twitter/X</label>
+            <input className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-sm text-axiom-text focus:outline-none" placeholder="https://x.com/..." value={draft.twitter || ""} onChange={e => setDraft(d => ({ ...d, twitter: e.target.value }))} />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-axiom-muted">Telegram</label>
+            <input className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-sm text-axiom-text focus:outline-none" placeholder="https://t.me/..." value={draft.telegram || ""} onChange={e => setDraft(d => ({ ...d, telegram: e.target.value }))} />
+          </div>
+        </div>
+      </details>
+      
+      <details className="mt-2 text-sm border-t border-axiom-border pt-2">
         <summary className="cursor-pointer text-axiom-muted">Advanced Settings</summary>
         <div className="flex flex-col gap-2 mt-2">
           <div className="flex flex-col gap-1">
