@@ -71,15 +71,15 @@ export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunch
     <div className="flex flex-col gap-3 mt-4 text-axiom-text">
       <div className="flex flex-col gap-1">
         <label className="text-xs text-axiom-muted">Name</label>
-        <input className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-sm focus:outline-none" value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} />
+        <input className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-sm text-axiom-text focus:outline-none" value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} />
       </div>
       <div className="flex flex-col gap-1">
         <label className="text-xs text-axiom-muted">Ticker</label>
-        <input className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-sm focus:outline-none" value={draft.symbol} onChange={e => setDraft(d => ({ ...d, symbol: e.target.value }))} />
+        <input className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-sm text-axiom-text focus:outline-none" value={draft.symbol} onChange={e => setDraft(d => ({ ...d, symbol: e.target.value }))} />
       </div>
       <div className="flex flex-col gap-1">
         <label className="text-xs text-axiom-muted">Description</label>
-        <textarea className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-sm focus:outline-none min-h-[60px]" value={draft.description} onChange={e => setDraft(d => ({ ...d, description: e.target.value }))} />
+        <textarea className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-sm text-axiom-text focus:outline-none min-h-[60px]" value={draft.description} onChange={e => setDraft(d => ({ ...d, description: e.target.value }))} />
       </div>
       <div className="flex flex-col gap-1">
         <label className="text-xs text-axiom-muted">Image</label>
@@ -92,7 +92,7 @@ export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunch
         <div className="flex flex-col gap-2 mt-2">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-axiom-muted">IPFS Provider</label>
-            <select className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs focus:outline-none" value={settings.ipfsProvider} onChange={e => setSettings(s => ({ ...s, ipfsProvider: e.target.value as any }))}>
+            <select className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs text-axiom-text focus:outline-none" value={settings.ipfsProvider} onChange={e => setSettings(s => ({ ...s, ipfsProvider: e.target.value as any }))}>
               <option value="pinata">Pinata (Recommended)</option>
               <option value="pumpfun">Pump.fun (Fallback)</option>
             </select>
@@ -100,17 +100,17 @@ export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunch
           {settings.ipfsProvider === "pinata" && (
             <div className="flex flex-col gap-1">
               <label className="text-xs text-axiom-muted">Pinata JWT</label>
-              <input type="password" className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs focus:outline-none" value={settings.pinataJwt || ""} onChange={e => setSettings(s => ({ ...s, pinataJwt: e.target.value }))} />
+              <input type="password" className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs text-axiom-text focus:outline-none" value={settings.pinataJwt || ""} onChange={e => setSettings(s => ({ ...s, pinataJwt: e.target.value }))} />
             </div>
           )}
           <div className="flex gap-2">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-axiom-muted">Dev Buy (SOL)</label>
-              <input type="number" step="0.1" className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs focus:outline-none" value={settings.devBuySol} onChange={e => setSettings(s => ({ ...s, devBuySol: parseFloat(e.target.value) || 0 }))} />
+              <input type="number" step="0.1" className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs text-axiom-text focus:outline-none" value={settings.devBuySol} onChange={e => setSettings(s => ({ ...s, devBuySol: parseFloat(e.target.value) || 0 }))} />
             </div>
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-axiom-muted">Slippage (%)</label>
-              <input type="number" className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs focus:outline-none" value={settings.slippage} onChange={e => setSettings(s => ({ ...s, slippage: parseFloat(e.target.value) || 5 }))} />
+              <input type="number" className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs text-axiom-text focus:outline-none" value={settings.slippage} onChange={e => setSettings(s => ({ ...s, slippage: parseFloat(e.target.value) || 5 }))} />
             </div>
           </div>
         </div>
