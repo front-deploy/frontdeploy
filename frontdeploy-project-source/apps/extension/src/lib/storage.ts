@@ -1,6 +1,7 @@
 import type { SolanaAddressType } from "./detectSolanaAddress"
 import type { AxiomTokenContext } from "./axiomTokenContext"
 import type { XReplyContext } from "./xLaunchContext"
+import { hasExtensionContext, isContextInvalidated } from "./extensionContext"
 
 export interface OverlaySettings {
   overlayEnabled: boolean
@@ -23,6 +24,16 @@ const SETTINGS_KEY = "axiomIntelligence.settings"
 const API_SETTINGS_KEY = "axiomIntelligence.apiSettings"
 const SELECTED_KEY = "axiomIntelligence.selected"
 const LAUNCH_CONTEXT_KEY = "axiomIntelligence.launchContext"
+const LAUNCH_SETTINGS_KEY = "axiomIntelligence.launchSettings"
+
+export interface LaunchSettings {
+  ipfsProvider: "pinata" | "pumpfun"
+  pinataJwt?: string
+  rpcUrl?: string
+  devBuySol: number
+  slippage: number
+  priorityFee: number
+}
 
 const DEFAULT_SETTINGS: OverlaySettings = {
   overlayEnabled: true,
@@ -32,6 +43,13 @@ const DEFAULT_SETTINGS: OverlaySettings = {
 const DEFAULT_API_SETTINGS: ApiSettings = {
   liveDataEnabled: true,
   backendUrl: "http://127.0.0.1:8787"
+}
+
+const DEFAULT_LAUNCH_SETTINGS: LaunchSettings = {
+  ipfsProvider: "pinata",
+  devBuySol: 0,
+  slippage: 5,
+  priorityFee: 0.0005
 }
 
 type LabelMap = Record<string, string>
@@ -99,15 +117,40 @@ export async function saveSelectedLaunchContext(context: XReplyContext): Promise
   await setStorageValue(LAUNCH_CONTEXT_KEY, context)
 }
 
-async function getStorageValue<T>(key: string): Promise<T | undefined> {
-  if (typeof chrome === "undefined" || !chrome.storage?.local) return undefined
+export async function getLaunchSettings(): Promise<LaunchSettings> {
+  const value = await getStorageValue<Partial<LaunchSettings>>(LAUNCH_SETTINGS_KEY)
+  return {
+    ...DEFAULT_LAUNCH_SETTINGS,
+    ...value
+  }
+}
 
-  const result = await chrome.storage.local.get(key)
-  return result[key] as T | undefined
+export async function saveLaunchSettings(settings: LaunchSettings): Promise<void> {
+  await setStorageValue(LAUNCH_SETTINGS_KEY, settings)
+}
+
+async function getStorageValue<T>(key: string): Promise<T | undefined> {
+  if (!hasExtensionContext()) return undefined
+
+  try {
+    const result = await chrome.storage.local.get(key)
+    return result[key] as T | undefined
+  } catch (err) {
+    if (!isContextInvalidated(err)) {
+      console.warn("storage.get error", err)
+    }
+    return undefined
+  }
 }
 
 async function setStorageValue<T>(key: string, value: T): Promise<void> {
-  if (typeof chrome === "undefined" || !chrome.storage?.local) return
+  if (!hasExtensionContext()) return
 
-  await chrome.storage.local.set({ [key]: value })
+  try {
+    await chrome.storage.local.set({ [key]: value })
+  } catch (err) {
+    if (!isContextInvalidated(err)) {
+      console.warn("storage.set error", err)
+    }
+  }
 }

@@ -19,6 +19,7 @@ import {
   type XReplyContext
 } from "../lib/xLaunchContext"
 import { DeveloperReputationPanel } from "./DeveloperReputationPanel"
+import { LaunchPanel } from "./LaunchPanel"
 
 export function SidePanel() {
   const [selected, setSelected] = useState<SelectedAddress | null>(null)
@@ -120,6 +121,9 @@ export function SidePanel() {
     return (
       <main className="min-h-screen bg-axiom-bg p-4 text-axiom-text">
         <PanelHeader />
+        <div className="-mx-4 border-b border-axiom-border pb-2 mb-4">
+          <LaunchPanel />
+        </div>
         <LaunchWorkspace
           context={launchContext}
           copied={copied}
@@ -146,6 +150,9 @@ export function SidePanel() {
   return (
     <main className="min-h-screen bg-axiom-bg p-4 text-axiom-text">
       <PanelHeader />
+      <div className="-mx-4 border-b border-axiom-border pb-2 mb-4">
+        <LaunchPanel />
+      </div>
       <LaunchWorkspace
         context={launchContext}
         copied={copied}

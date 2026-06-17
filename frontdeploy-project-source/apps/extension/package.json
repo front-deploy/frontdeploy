@@ -13,6 +13,9 @@
     "verify": "npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
+    "@plasmohq/storage": "^1.15.0",
+    "@solana/web3.js": "^1.98.4",
+    "bs58": "^6.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -35,7 +38,9 @@
     "description": "X-to-pump.fun launch radar for Solana trenchers.",
     "permissions": [
       "storage",
-      "sidePanel"
+      "sidePanel",
+      "scripting",
+      "tabs"
     ],
     "host_permissions": [
       "https://axiom.trade/*",
@@ -45,7 +50,12 @@
       "https://*.twitter.com/*",
       "https://pump.fun/*",
       "http://127.0.0.1:8787/*",
-      "http://localhost:8787/*"
+      "http://localhost:8787/*",
+      "https://www.pump.fun/*",
+      "https://pumpportal.fun/*",
+      "https://uploads.pinata.cloud/*",
+      "https://api.pinata.cloud/*",
+      "https://ipfs.io/*"
     ],
     "action": {
       "default_title": "Frontdeploy",

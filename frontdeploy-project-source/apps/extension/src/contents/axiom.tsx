@@ -23,6 +23,7 @@ import { getMockIntelligence } from "../lib/mockIntelligence"
 import type { AddressIntelligence } from "../lib/mockIntelligence"
 import { getLabel, getSettings, saveSelectedAddress } from "../lib/storage"
 import type { OverlaySettings } from "../lib/storage"
+import { hasExtensionContext, isContextInvalidated } from "../lib/extensionContext"
 
 export const config: PlasmoCSConfig = {
   matches: ["https://axiom.trade/*"],
@@ -63,18 +64,24 @@ async function mountOverlay() {
     subtree: true
   })
 
-  chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName !== "local" || !changes["axiomIntelligence.settings"]) return
+  if (hasExtensionContext()) {
+    try {
+      chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName !== "local" || !changes["axiomIntelligence.settings"]) return
 
-    void getSettings().then((settings) => {
-      currentSettings = settings
-      applyOverlayVisibility(settings)
+        void getSettings().then((settings) => {
+          currentSettings = settings
+          applyOverlayVisibility(settings)
 
-      if (isOverlayVisible(settings)) {
-        scanDocument()
-      }
-    })
-  })
+          if (isOverlayVisible(settings)) {
+            scanDocument()
+          }
+        })
+      })
+    } catch (err) {
+      if (!isContextInvalidated(err)) console.warn(err)
+    }
+  }
 }
 
 function scanDocument() {
@@ -263,9 +270,13 @@ function InlineIntelligence({
             type: detection.type,
             ...(context ? { context } : {})
           }).then(() => {
-            void chrome.runtime.sendMessage({
-              type: "AXIOM_INTEL_OPEN_SIDE_PANEL"
-            })
+            if (hasExtensionContext()) {
+              chrome.runtime.sendMessage({
+                type: "AXIOM_INTEL_OPEN_SIDE_PANEL"
+              }).catch((err) => {
+                if (!isContextInvalidated(err)) console.warn(err)
+              })
+            }
           })
         }}
       />

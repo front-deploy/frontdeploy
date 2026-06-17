@@ -8,8 +8,10 @@ import {
   type ApiSettings,
   type OverlaySettings
 } from "../lib/storage"
+import { LaunchPanel } from "./LaunchPanel"
 
 export function PopupStatus() {
+  const [tab, setTab] = useState<"settings" | "launch">("launch")
   const [settings, setSettings] = useState<OverlaySettings>({
     overlayEnabled: true,
     showRiskBadges: true
@@ -48,7 +50,30 @@ export function PopupStatus() {
         </div>
       </header>
 
-      <section className="mt-4 space-y-3">
+      <div className="flex border-b border-axiom-border">
+        <button
+          className={`flex-1 py-2 text-sm font-bold uppercase transition-colors ${tab === "launch" ? "text-axiom-accent border-b-2 border-axiom-accent" : "text-axiom-muted hover:text-axiom-text"}`}
+          onClick={() => setTab("launch")}
+        >
+          Launch
+        </button>
+        <button
+          className={`flex-1 py-2 text-sm font-bold uppercase transition-colors ${tab === "settings" ? "text-axiom-accent border-b-2 border-axiom-accent" : "text-axiom-muted hover:text-axiom-text"}`}
+          onClick={() => setTab("settings")}
+        >
+          Settings
+        </button>
+      </div>
+
+      {tab === "launch" && (
+        <div className="-mx-4">
+          <LaunchPanel />
+        </div>
+      )}
+
+      {tab === "settings" && (
+        <>
+          <section className="mt-4 space-y-3">
         <ToggleRow
           label="Enable overlay"
           enabled={settings.overlayEnabled}
@@ -85,6 +110,8 @@ export function PopupStatus() {
         </p>
         {savedMessage ? <p className="text-xs font-bold text-axiom-good">{savedMessage}</p> : null}
       </section>
+        </>
+      )}
 
       <footer className="mt-4 border-t border-axiom-border pt-3 text-xs font-semibold text-axiom-muted">
         Version 0.1.0
