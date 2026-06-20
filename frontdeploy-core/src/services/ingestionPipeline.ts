@@ -109,6 +109,21 @@ export class IngestionPipeline {
     // Push to connected extensions
     this.wsService.broadcastEvent(payload);
 
-    // TODO: Save to database if needed
+    // Save to database
+    prisma.kolEvent.create({
+      data: {
+        tweetId: payload.tweetId,
+        authorHandle: payload.authorHandle,
+        authorUserId: tweet.authorId || '', // Fallback if missing
+        text: payload.text,
+        url: payload.url,
+        isSignal: payload.isSignal,
+        contractAddress: payload.contractAddress,
+        ticker: payload.ticker,
+        postedAt: payload.postedAt,
+      }
+    }).catch((err: any) => {
+      this.logger.error({ err }, '[IngestionPipeline] Failed to save KOL event to DB');
+    });
   }
 }

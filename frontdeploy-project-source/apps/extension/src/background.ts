@@ -360,25 +360,6 @@ chrome.notifications.onButtonClicked.addListener((notifId, btnIdx) => {
 // Initial connection
 ensureWebSocket();
 
-// TEMPORARY DUMMY INJECTION FOR RECORDING
-let dummyCount = 0;
-setInterval(() => {
-  dummyCount++;
-  const dummyEvent = {
-    tweetId: `dummy-${Date.now()}`,
-    authorHandle: dummyCount % 2 === 0 ? "blknoiz06" : "MustStopMurad",
-    authorUserId: "123456",
-    text: `Just bought a bag of $DUMMY${dummyCount}. Looks promising. CA: ${dummyCount}zCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump`,
-    url: `https://x.com/dummy/status/${Date.now()}`,
-    isSignal: true,
-    contractAddress: `${dummyCount}zCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump`,
-    ticker: `$DUMMY${dummyCount}`,
-    postedAt: new Date().toISOString()
-  };
-  handleKolEvent(dummyEvent);
-}, 10000);
-
-
 // MV3 Keepalive mechanism
 const ALARM_NAME = "WS_KEEPALIVE_ALARM";
 

@@ -57,7 +57,11 @@ export function SidePanel() {
 
     verifyGate();
 
-    const listener = () => verifyGate();
+    const listener = (changes: any) => {
+      if (changes.walletSession) {
+        verifyGate();
+      }
+    };
     if (typeof chrome !== "undefined" && chrome.storage) {
       chrome.storage.local.onChanged.addListener(listener);
     }
@@ -74,8 +78,10 @@ export function SidePanel() {
 
     if (typeof chrome === "undefined" || !chrome.storage?.onChanged) return
 
-    const handleChange = () => {
-      void refreshSelected()
+    const handleChange = (changes: any) => {
+      if (changes.selectedAddress || changes.selectedLaunchContext) {
+        void refreshSelected()
+      }
     }
 
     chrome.storage.onChanged.addListener(handleChange)
