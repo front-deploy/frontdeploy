@@ -1,9 +1,28 @@
 import { useState, useEffect } from "react";
-import { useStorage } from "@plasmohq/storage/hook";
-import { Storage } from "@plasmohq/storage";
 
 export function KolLiveFeed() {
-  const [events] = useStorage({ key: "kolEvents", instance: new Storage({ area: "local" }) }, []);
+  const [events, setEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Initial load
+    if (typeof chrome !== "undefined" && chrome.storage) {
+      chrome.storage.local.get(["kolEvents"], (result) => {
+        setEvents(result.kolEvents || []);
+      });
+
+      // Listener for updates
+      const listener = (changes: any) => {
+        if (changes.kolEvents) {
+          setEvents(changes.kolEvents.newValue || []);
+        }
+      };
+      chrome.storage.onChanged.addListener(listener);
+
+      return () => {
+        chrome.storage.onChanged.removeListener(listener);
+      };
+    }
+  }, []);
   
   return (
     <div className="flex flex-col gap-3 p-4">

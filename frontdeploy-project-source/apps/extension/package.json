@@ -54,6 +54,7 @@
       "https://pump.fun/*",
       "ws://localhost:8080/*",
       "http://localhost:8080/*",
+      "wss://frontdeploy-production.up.railway.app/*",
       "https://www.pump.fun/*",
       "https://pumpportal.fun/*",
       "https://uploads.pinata.cloud/*",
