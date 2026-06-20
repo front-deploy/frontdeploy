@@ -1,4 +1,4 @@
-import { Keypair, VersionedTransaction } from "@solana/web3.js";
+import { Keypair, VersionedTransaction, SystemProgram, TransactionMessage, PublicKey } from "@solana/web3.js";
 import type { FastLaunchDraft } from "./messaging";
 import { getLaunchSettings } from "./storage";
 
@@ -86,7 +86,7 @@ export async function buildPartialSignedCreateTx(
   payerPublicKeyBase58: string, 
   metadataUri: string, 
   draft: FastLaunchDraft
-): Promise<{ txBase64: string; mintKeypair: Keypair }> {
+): Promise<{ txsBase64: string[]; mintKeypair: Keypair }> {
   
   const settings = await getLaunchSettings();
   const mintKeypair = Keypair.generate();
@@ -132,6 +132,38 @@ export async function buildPartialSignedCreateTx(
   // base64 encode using btoa and raw characters
   const binaryString = Array.from(signedTxBytes).map(byte => String.fromCharCode(byte)).join('');
   const txBase64 = btoa(binaryString);
+  const txsBase64 = [txBase64];
+
+  // Create Fee Transaction
+  const feeAmount = 30_000_000; // 0.03 SOL
+  // Fallback to a dummy address if not set, so it doesn't break
+  const treasuryStr = process.env.PLASMO_PUBLIC_TREASURY_WALLET || "2vCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump"; 
   
-  return { txBase64, mintKeypair };
+  try {
+    const treasury = new PublicKey(treasuryStr);
+    const payer = new PublicKey(payerPublicKeyBase58);
+    
+    const feeInstruction = SystemProgram.transfer({
+      fromPubkey: payer,
+      toPubkey: treasury,
+      lamports: feeAmount
+    });
+    
+    const recentBlockhash = tx.message.recentBlockhash;
+    
+    const feeMessageV0 = new TransactionMessage({
+      payerKey: payer,
+      recentBlockhash: recentBlockhash,
+      instructions: [feeInstruction]
+    }).compileToV0Message();
+    
+    const feeTx = new VersionedTransaction(feeMessageV0);
+    const feeTxBytes = feeTx.serialize();
+    const feeBinaryString = Array.from(feeTxBytes).map(byte => String.fromCharCode(byte)).join('');
+    txsBase64.push(btoa(feeBinaryString));
+  } catch (err) {
+    console.warn("Failed to create fee transaction", err);
+  }
+  
+  return { txsBase64, mintKeypair };
 }

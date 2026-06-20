@@ -25,6 +25,13 @@ const API_SETTINGS_KEY = "axiomIntelligence.apiSettings"
 const SELECTED_KEY = "axiomIntelligence.selected"
 const LAUNCH_CONTEXT_KEY = "axiomIntelligence.launchContext"
 const LAUNCH_SETTINGS_KEY = "axiomIntelligence.launchSettings"
+const WALLET_SESSION_KEY = "axiomIntelligence.walletSession"
+
+export interface WalletSession {
+  connected: boolean
+  publicKey: string
+  provider: "phantom" | "solflare" | "backpack" | ""
+}
 
 export interface LaunchSettings {
   ipfsProvider: "pinata" | "pumpfun"
@@ -127,6 +134,23 @@ export async function getLaunchSettings(): Promise<LaunchSettings> {
 
 export async function saveLaunchSettings(settings: LaunchSettings): Promise<void> {
   await setStorageValue(LAUNCH_SETTINGS_KEY, settings)
+}
+
+export async function getWalletSession(): Promise<WalletSession | null> {
+  return (await getStorageValue<WalletSession>(WALLET_SESSION_KEY)) ?? null
+}
+
+export async function saveWalletSession(session: WalletSession | null): Promise<void> {
+  if (session === null) {
+    if (!hasExtensionContext()) return
+    try {
+      await chrome.storage.local.remove(WALLET_SESSION_KEY)
+    } catch (err) {
+      if (!isContextInvalidated(err)) console.warn("storage.remove error", err)
+    }
+  } else {
+    await setStorageValue(WALLET_SESSION_KEY, session)
+  }
 }
 
 async function getStorageValue<T>(key: string): Promise<T | undefined> {

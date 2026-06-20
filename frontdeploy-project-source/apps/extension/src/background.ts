@@ -1,5 +1,6 @@
 import type { FrontendToBackgroundMessage, BackgroundToRelayMessage, RelayToBackgroundMessage, FastLaunchDraft, FrontendWalletStatusResponse, FrontendWalletConnectResponse, FrontendFastLaunchResponse } from "./lib/messaging";
 import { uploadMetadata, buildPartialSignedCreateTx } from "./lib/pumpfun";
+import { saveWalletSession, getLaunchSettings } from "./lib/storage";
 
 chrome.runtime.onInstalled.addListener(() => {
   void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
@@ -120,6 +121,9 @@ async function handleWalletConnect(provider: "phantom" | "solflare" | "backpack"
     const listener = (relayMsg: any) => {
       if (relayMsg.type === "RELAY_CONNECT_RESPONSE" && relayMsg.id === id) {
         chrome.runtime.onMessage.removeListener(listener);
+        if (relayMsg.success && relayMsg.publicKey) {
+          saveWalletSession({ connected: true, publicKey: relayMsg.publicKey, provider }).catch(console.error);
+        }
         sendResponse({
           success: relayMsg.success,
           publicKey: relayMsg.publicKey,
@@ -150,6 +154,9 @@ async function handleWalletDisconnect(provider: "phantom" | "solflare" | "backpa
     const listener = (relayMsg: any) => {
       if (relayMsg.type === "RELAY_DISCONNECT_RESPONSE" && relayMsg.id === id) {
         chrome.runtime.onMessage.removeListener(listener);
+        if (relayMsg.success) {
+          saveWalletSession(null).catch(console.error);
+        }
         sendResponse({ success: relayMsg.success, error: relayMsg.error });
       }
     };
@@ -186,7 +193,7 @@ async function handleFastLaunch(draft: FastLaunchDraft, sendResponse: (res: Fron
     const metadataUri = await uploadMetadata(draft);
 
     // 3. Build & sign with mint keypair via pumpfun trade-local api
-    const { txBase64, mintKeypair } = await buildPartialSignedCreateTx(statusRes.publicKey, metadataUri, draft);
+    const { txsBase64, mintKeypair } = await buildPartialSignedCreateTx(statusRes.publicKey, metadataUri, draft);
     
     // 4. Send to bridge for payer signature
     const id = Math.random().toString(36).substring(2, 15);
@@ -197,14 +204,21 @@ async function handleFastLaunch(draft: FastLaunchDraft, sendResponse: (res: Fron
         sendResponse({
           success: relayMsg.success,
           mint: mintKeypair.publicKey.toBase58(),
-          signature: relayMsg.signature,
+          signatures: relayMsg.signatures,
           error: relayMsg.error
         });
       }
     };
     chrome.runtime.onMessage.addListener(listener);
     
-    const request: BackgroundToRelayMessage = { type: "BACKGROUND_SIGN_SEND_REQUEST", id, provider, txBase64 };
+    const settings = await getLaunchSettings();
+    // Primary: free mainnet-beta (or user setting), Fallback: Helius
+    const primaryRpcUrl = settings.rpcUrl || process.env.PLASMO_PUBLIC_RPC_URL;
+    const heliusFallback = process.env.PLASMO_PUBLIC_HELIUS_RPC_URL;
+    
+    const rpcUrls = [primaryRpcUrl, heliusFallback].filter(Boolean) as string[];
+    
+    const request: BackgroundToRelayMessage = { type: "BACKGROUND_SIGN_SEND_REQUEST", id, provider, txsBase64, rpcUrls };
     chrome.tabs.sendMessage(tabId, request);
     
     setTimeout(() => {

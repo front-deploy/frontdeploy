@@ -2,9 +2,11 @@
 
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import Image from "next/image";
+import { useTokenGate } from "@/hooks/useTokenGate";
 
 export function Hero() {
   const { addElement } = useIntersectionObserver();
+  const { verifyAndDownload, isVerifying, error, downloadUrl } = useTokenGate();
 
   return (
     <section className="hero">
@@ -48,23 +50,46 @@ export function Hero() {
         intelligence — all inside your browser.
       </p>
       <div className="hero-actions fade-in stagger-3" ref={addElement} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-        <a
-          href="/downloads/frontdeploy-extension.zip"
-          download
-          className="btn-primary"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+        {!downloadUrl ? (
+          <button
+            onClick={verifyAndDownload}
+            disabled={isVerifying}
+            className="btn-primary"
+            style={{ cursor: isVerifying ? 'wait' : 'pointer', border: 'none' }}
           >
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-          Download Extension
-        </a>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            {isVerifying ? "Verifying $FDP Balance..." : "Connect to Download"}
+          </button>
+        ) : (
+          <a
+            href={downloadUrl}
+            download
+            className="btn-primary"
+            style={{ backgroundColor: 'var(--foreground)', color: 'var(--background)' }}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Download Extension .zip
+          </a>
+        )}
+        {error && <div style={{ color: 'red', fontSize: '12px', position: 'absolute', marginTop: '60px' }}>{error}</div>}
         <a
           href="https://github.com/front-deploy/frontdeploy"
           target="_blank"

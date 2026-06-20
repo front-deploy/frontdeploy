@@ -6,8 +6,14 @@ import type {
   FrontendFastLaunchResponse, 
   FastLaunchDraft 
 } from "./messaging";
+import { getWalletSession } from "./storage";
 
 export async function getWalletStatus(): Promise<FrontendWalletStatusResponse> {
+  const session = await getWalletSession();
+  if (session && session.connected) {
+    return { connected: true, publicKey: session.publicKey, provider: session.provider as any };
+  }
+
   const msg: FrontendToBackgroundMessage = { type: "FRONTEND_WALLET_STATUS" };
   try {
     return await chrome.runtime.sendMessage(msg);

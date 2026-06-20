@@ -1,0 +1,111 @@
+import { NextResponse } from "next/server";
+import { Connection, PublicKey } from "@solana/web3.js";
+import nacl from "tweetnacl";
+import bs58 from "bs58";
+
+const FDP_MINT = process.env.NEXT_PUBLIC_FRONTDEPLOY_CA;
+const MIN_BALANCE = parseInt(process.env.MIN_TOKEN_BALANCE || "10000000", 10); // 10 million FDP
+
+export async function POST(req: Request) {
+  try {
+    const { publicKey, signature, message } = await req.json();
+
+    if (!publicKey || !signature || !message) {
+      console.warn("[Verify Gate Debug] Missing required fields in request body:", { publicKey: !!publicKey, signature: !!signature, message: !!message });
+      return NextResponse.json(
+        { error: "Invalid request. Please try reconnecting your wallet." },
+        { status: 400 }
+      );
+    }
+
+    // 1. Verify the signature
+    const signatureUint8 = bs58.decode(signature);
+    const messageUint8 = new TextEncoder().encode(message);
+    const pubKeyUint8 = bs58.decode(publicKey);
+
+    const isValid = nacl.sign.detached.verify(
+      messageUint8,
+      signatureUint8,
+      pubKeyUint8
+    );
+
+    if (!isValid) {
+      console.warn(`[Verify Gate Debug] Signature verification failed for pubKey: ${publicKey}`);
+      return NextResponse.json({ error: "Could not verify your wallet signature. Please try again." }, { status: 401 });
+    }
+
+    // 2. Check token balance
+    // Ensure we use the environment variable for the RPC URL to avoid hardcoding
+    const rpcUrls = [
+      process.env.NEXT_PUBLIC_RPC_URL,
+      process.env.HELIUS_RPC_URL,
+      process.env.FALLBACK_RPC_URL
+    ].filter(Boolean) as string[];
+
+    if (rpcUrls.length === 0) {
+      console.error("[Verify Gate Debug] No RPC URLs configured on the server.");
+      return NextResponse.json({ error: "Server configuration issue. Please contact support." }, { status: 500 });
+    }
+
+    const pubKey = new PublicKey(publicKey);
+    
+    if (!FDP_MINT) {
+      console.error("Missing FDP_MINT configuration");
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+    }
+    const mintKey = new PublicKey(FDP_MINT);
+
+    let tokenAccounts = null;
+    let lastRpcError = null;
+
+    for (const url of rpcUrls) {
+      try {
+        const connection = new Connection(url, "confirmed");
+        tokenAccounts = await connection.getParsedTokenAccountsByOwner(pubKey, {
+          mint: mintKey,
+        });
+        break; // Successfully fetched, break the loop
+      } catch (err) {
+        lastRpcError = err;
+        console.warn(`[Verify Gate Debug] RPC connection failed for ${url}:`, err);
+      }
+    }
+
+    if (!tokenAccounts) {
+      console.error("[Verify Gate Debug] All RPC fallbacks failed to fetch token accounts. Last error:", lastRpcError);
+      return NextResponse.json({ error: "Could not connect to the Solana network. Please try again later." }, { status: 500 });
+    }
+
+    let totalBalance = 0;
+    for (const account of tokenAccounts.value) {
+      const parsedInfo = account.account.data.parsed.info;
+      const uiAmount = parsedInfo.tokenAmount.uiAmount || 0;
+      totalBalance += uiAmount;
+    }
+
+    if (totalBalance < MIN_BALANCE) {
+      console.info(`[Verify Gate Debug] Access denied: User ${publicKey} has ${totalBalance} $FDP (Minimum required: ${MIN_BALANCE})`);
+      return NextResponse.json(
+        { error: `You need at least ${MIN_BALANCE.toLocaleString()} $FDP to download this extension. Your current balance is ${totalBalance.toLocaleString()} $FDP.` },
+        { status: 403 }
+      );
+    }
+
+    console.info(`[Verify Gate Debug] Access granted: User ${publicKey} verified with ${totalBalance} $FDP.`);
+
+    // 3. Return success and the download link
+    // The download link could be a presigned URL, or just a direct link to the zip.
+    // For now, we return a secret download URL or just a success flag that the frontend uses.
+    return NextResponse.json({
+      success: true,
+      downloadUrl: "/downloads/frontdeploy-extension.zip" // Example static file, ideally this would be authenticated
+    });
+
+  } catch (error: unknown) {
+    console.error("[Verify Gate Debug] Unhandled verification error:", error);
+    return NextResponse.json(
+      { error: "An unexpected error occurred on the server while verifying your wallet." },
+      { status: 500 }
+    );
+  }
+}

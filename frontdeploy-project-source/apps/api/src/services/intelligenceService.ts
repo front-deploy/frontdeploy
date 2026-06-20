@@ -157,7 +157,7 @@ const enrichWalletIntelligence = async (
     recentActivity: [
       `Helius tracked assets: ${assetCount}`,
       "Wallet PnL still requires a dedicated PnL calculator",
-      "Read-only intelligence only; no wallet connection or trading"
+      "Read-only intelligence only"
     ]
   }
 }

@@ -11,6 +11,7 @@ import {
   saveLabel,
   saveSelectedAddress
 } from "../lib/storage"
+import { getWalletSession } from "../lib/storage"
 import {
   buildChatGptLogoUrl,
   buildPumpFunCreateUrl,
@@ -32,6 +33,39 @@ export function SidePanel() {
   const [intelligence, setIntelligence] = useState<AddressIntelligence | null>(null)
   const [loadingIntelligence, setLoadingIntelligence] = useState(false)
   const [savedMessage, setSavedMessage] = useState("")
+
+  const [gateStatus, setGateStatus] = useState<{ isAllowed: boolean; balance: number; error?: string } | null>(null);
+  const [loadingGate, setLoadingGate] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    
+    const verifyGate = async () => {
+      setLoadingGate(true);
+      const session = await getWalletSession();
+      if (session?.connected && session.publicKey) {
+        const { checkTokenGate } = await import("../lib/tokenGate");
+        const result = await checkTokenGate(session.publicKey);
+        if (mounted) setGateStatus(result);
+      } else {
+        if (mounted) setGateStatus({ isAllowed: false, balance: 0, error: "Please connect your wallet to use the extension." });
+      }
+      if (mounted) setLoadingGate(false);
+    };
+
+    verifyGate();
+
+    const listener = () => verifyGate();
+    if (typeof chrome !== "undefined" && chrome.storage) {
+      chrome.storage.local.onChanged.addListener(listener);
+    }
+    return () => {
+      mounted = false;
+      if (typeof chrome !== "undefined" && chrome.storage) {
+        chrome.storage.local.onChanged.removeListener(listener);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     void refreshSelected()
@@ -115,6 +149,28 @@ export function SidePanel() {
   async function openLogoGenerator(draft: LaunchDraft) {
     window.open(buildChatGptLogoUrl(draft), "_blank", "noopener,noreferrer")
     await copyText("logo prompt", draft.logoPrompt)
+  }
+
+  if (loadingGate) {
+    return (
+      <main className="min-h-screen bg-axiom-bg p-4 text-axiom-text">
+        <PanelHeader />
+        <div className="mt-8 text-center text-axiom-muted text-sm">Checking $FDP balance...</div>
+        <SidePanelFooter />
+      </main>
+    );
+  }
+
+  if (!gateStatus?.isAllowed) {
+    return (
+      <main className="min-h-screen bg-axiom-bg p-4 text-axiom-text">
+        <PanelHeader />
+        <div className="-mx-4 border-b border-axiom-border pb-2 mb-4">
+          <LaunchPanel />
+        </div>
+        <SidePanelFooter />
+      </main>
+    );
   }
 
   if (!selected || !intelligence) {

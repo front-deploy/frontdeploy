@@ -31,7 +31,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   
   if (bgMsg.type === "BACKGROUND_SIGN_SEND_REQUEST") {
-    const pageMsg: PageToBridgeMessage = { type: "wallet-sign-send-request", id: bgMsg.id, provider: bgMsg.provider, txBase64: bgMsg.txBase64 };
+    const pageMsg: PageToBridgeMessage = { type: "wallet-sign-send-request", id: bgMsg.id, provider: bgMsg.provider, txsBase64: bgMsg.txsBase64, rpcUrls: bgMsg.rpcUrls };
     window.postMessage({ channel: WALLET_CHANNEL, msg: pageMsg }, "*");
     sendResponse({ received: true });
     return true;
@@ -91,7 +91,7 @@ window.addEventListener("message", (event) => {
       type: "RELAY_SIGN_SEND_RESPONSE",
       id: msg.id,
       success: msg.success,
-      ...(msg.signature ? { signature: msg.signature } : {}),
+      ...(msg.signatures ? { signatures: msg.signatures } : {}),
       ...(msg.error ? { error: msg.error } : {})
     };
     chrome.runtime.sendMessage(relayMsg);
