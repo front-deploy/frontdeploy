@@ -46,14 +46,27 @@ export function useTokenGate() {
         })
       });
 
-      const data = await apiResp.json();
-
       if (!apiResp.ok) {
-        throw new Error(data.error || "Verification failed");
+        let errorMsg = "Verification failed";
+        try {
+          const errorData = await apiResp.json();
+          errorMsg = errorData.error || errorMsg;
+        } catch {
+          // If we can't parse JSON, keep the default error message
+        }
+        throw new Error(errorMsg);
       }
 
-      setDownloadUrl(data.downloadUrl);
-      return data.downloadUrl;
+      // Check if we received the file
+      const contentType = apiResp.headers.get("Content-Type");
+      if (contentType && contentType.includes("application/zip")) {
+        const blob = await apiResp.blob();
+        const url = URL.createObjectURL(blob);
+        setDownloadUrl(url);
+        return url;
+      } else {
+        throw new Error("Invalid response format from server.");
+      }
 
     } catch (err: unknown) {
       // 1. Developer Log (Detailed)

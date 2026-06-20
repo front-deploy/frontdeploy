@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { Connection, PublicKey } from "@solana/web3.js";
 import nacl from "tweetnacl";
 import bs58 from "bs58";
+import { readFileSync } from "fs";
+import path from "path";
 
 const FDP_MINT = process.env.NEXT_PUBLIC_FRONTDEPLOY_CA;
 const MIN_BALANCE = parseInt(process.env.MIN_TOKEN_BALANCE || "10000000", 10); // 10 million FDP
@@ -18,7 +20,23 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Verify the signature
+    // 1. Check for Replay Attack by verifying the timestamp
+    const timestampMatch = message.match(/Verifying Frontdeploy Token Gate \((\d+)\)/);
+    if (!timestampMatch) {
+      console.warn("[Verify Gate Debug] Message format invalid or missing timestamp:", message);
+      return NextResponse.json({ error: "Invalid signature format." }, { status: 400 });
+    }
+
+    const messageTime = parseInt(timestampMatch[1], 10);
+    const currentTime = Date.now();
+    const MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
+
+    if (isNaN(messageTime) || currentTime - messageTime > MAX_AGE_MS || messageTime > currentTime + 60000) {
+      console.warn(`[Verify Gate Debug] Signature expired. MessageTime: ${messageTime}, CurrentTime: ${currentTime}`);
+      return NextResponse.json({ error: "Signature has expired. Please refresh the page and reconnect your wallet." }, { status: 401 });
+    }
+
+    // 2. Verify the cryptographic signature
     const signatureUint8 = bs58.decode(signature);
     const messageUint8 = new TextEncoder().encode(message);
     const pubKeyUint8 = bs58.decode(publicKey);
@@ -93,13 +111,25 @@ export async function POST(req: Request) {
 
     console.info(`[Verify Gate Debug] Access granted: User ${publicKey} verified with ${totalBalance} $FDP.`);
 
-    // 3. Return success and the download link
-    // The download link could be a presigned URL, or just a direct link to the zip.
-    // For now, we return a secret download URL or just a success flag that the frontend uses.
-    return NextResponse.json({
-      success: true,
-      downloadUrl: "/downloads/frontdeploy-extension.zip" // Example static file, ideally this would be authenticated
-    });
+    // 3. Return the actual file binary securely
+    try {
+      const filePath = path.join(process.cwd(), "private", "frontdeploy-extension.zip");
+      const fileBuffer = readFileSync(filePath);
+
+      return new NextResponse(fileBuffer, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/zip",
+          "Content-Disposition": 'attachment; filename="frontdeploy-extension.zip"',
+        },
+      });
+    } catch (err) {
+      console.error("[Verify Gate Debug] Failed to read zip file:", err);
+      return NextResponse.json(
+        { error: "The extension file is currently unavailable. Please try again later." },
+        { status: 500 }
+      );
+    }
 
   } catch (error: unknown) {
     console.error("[Verify Gate Debug] Unhandled verification error:", error);

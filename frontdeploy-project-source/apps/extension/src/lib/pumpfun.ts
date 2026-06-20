@@ -136,9 +136,12 @@ export async function buildPartialSignedCreateTx(
 
   // Create Fee Transaction
   const feeAmount = 30_000_000; // 0.03 SOL
-  // Fallback to a dummy address if not set, so it doesn't break
-  const treasuryStr = process.env.PLASMO_PUBLIC_TREASURY_WALLET || "2vCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump"; 
-  
+  // Check if treasury is configured
+  const treasuryStr = process.env.PLASMO_PUBLIC_TREASURY_WALLET;
+  if (!treasuryStr) {
+    throw new Error("Treasury wallet is not configured. Please add PLASMO_PUBLIC_TREASURY_WALLET to your .env");
+  }
+
   try {
     const treasury = new PublicKey(treasuryStr);
     const payer = new PublicKey(payerPublicKeyBase58);
