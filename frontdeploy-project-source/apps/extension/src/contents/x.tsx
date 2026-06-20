@@ -27,11 +27,7 @@ export const config: PlasmoCSConfig = {
   run_at: "document_idle"
 }
 
-export const getStyle = () => {
-  const style = document.createElement("style")
-  style.textContent = LAUNCH_RADAR_CSS
-  return style
-}
+
 
 const PROCESSED_ATTR = "data-axiom-launch-processed"
 const RADAR_ROOT_ATTR = "data-axiom-launch-dock"

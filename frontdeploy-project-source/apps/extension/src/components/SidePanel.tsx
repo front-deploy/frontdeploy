@@ -186,13 +186,13 @@ export function SidePanel() {
         <div className="flex items-center gap-4 mb-4 border-b border-axiom-border pb-2">
           <button 
             onClick={() => setActiveTab("radar")}
-            className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'radar' ? 'text-white border-white' : 'text-axiom-muted border-transparent hover:text-white/80'}`}
+            className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'radar' ? 'text-axiom-text border-axiom-text' : 'text-axiom-muted border-transparent hover:text-axiom-text/80'}`}
           >
             Launch Radar
           </button>
           <button 
             onClick={() => setActiveTab("kol")}
-            className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'kol' ? 'text-white border-white' : 'text-axiom-muted border-transparent hover:text-white/80'}`}
+            className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'kol' ? 'text-axiom-text border-axiom-text' : 'text-axiom-muted border-transparent hover:text-axiom-text/80'}`}
           >
             KOL Live
           </button>
@@ -240,13 +240,13 @@ export function SidePanel() {
       <div className="flex items-center gap-4 mb-4 border-b border-axiom-border pb-2">
         <button 
           onClick={() => setActiveTab("radar")}
-          className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'radar' ? 'text-white border-white' : 'text-axiom-muted border-transparent hover:text-white/80'}`}
+          className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'radar' ? 'text-axiom-text border-axiom-text' : 'text-axiom-muted border-transparent hover:text-axiom-text/80'}`}
         >
           Launch Radar
         </button>
         <button 
           onClick={() => setActiveTab("kol")}
-          className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'kol' ? 'text-white border-white' : 'text-axiom-muted border-transparent hover:text-white/80'}`}
+          className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'kol' ? 'text-axiom-text border-axiom-text' : 'text-axiom-muted border-transparent hover:text-axiom-text/80'}`}
         >
           KOL Live
         </button>

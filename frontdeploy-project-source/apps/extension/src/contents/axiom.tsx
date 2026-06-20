@@ -32,11 +32,7 @@ export const config: PlasmoCSConfig = {
   run_at: "document_idle"
 }
 
-export const getStyle = () => {
-  const style = document.createElement("style")
-  style.textContent = cssText
-  return style
-}
+
 
 const PROCESSED_ATTR = "data-axiom-intel-processed"
 const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "TEXTAREA", "INPUT", "BUTTON", "SELECT"])
@@ -47,6 +43,13 @@ let currentSettings: OverlaySettings = {
 }
 
 async function mountOverlay() {
+  if (document.head && !document.querySelector("[data-axiom-intel-style]")) {
+    const style = document.createElement("style")
+    style.setAttribute("data-axiom-intel-style", "true")
+    style.textContent = cssText
+    document.head.append(style)
+  }
+
   try {
     const session = await getWalletStatus()
     const gate = await checkTokenGate(session?.publicKey)

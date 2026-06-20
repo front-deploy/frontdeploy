@@ -2,7 +2,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { getLaunchSettings } from "./storage";
 
 const FDP_MINT = process.env.PLASMO_PUBLIC_FRONTDEPLOY_CA || "2vCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump";
-const MIN_BALANCE = process.env.PLASMO_PUBLIC_MIN_TOKEN_BALANCE ? parseInt(process.env.PLASMO_PUBLIC_MIN_TOKEN_BALANCE, 10) : 10_000_000;
+const MIN_BALANCE = process.env.PLASMO_PUBLIC_MIN_TOKEN_BALANCE ? parseInt(process.env.PLASMO_PUBLIC_MIN_TOKEN_BALANCE, 10) : 1_000_000;
 
 export async function checkTokenGate(publicKeyBase58: string | undefined): Promise<{ isAllowed: boolean; balance: number; error?: string }> {
   if (!publicKeyBase58) {

@@ -39,9 +39,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 // Helper to find or create pump.fun create tab
-async function ensurePumpFunTab(draft?: FastLaunchDraft): Promise<number> {
+async function ensurePumpFunTab(draft?: FastLaunchDraft, focusTab: boolean = false): Promise<number> {
   const tabs = await chrome.tabs.query({ url: "*://pump.fun/create*" });
   if (tabs.length > 0 && tabs[0]?.id) {
+    if (focusTab) {
+      await chrome.tabs.update(tabs[0].id, { active: true });
+      if (tabs[0].windowId) {
+        await chrome.windows.update(tabs[0].windowId, { focused: true });
+      }
+    }
     return tabs[0].id;
   }
   
@@ -57,7 +63,7 @@ async function ensurePumpFunTab(draft?: FastLaunchDraft): Promise<number> {
     if (draft.telegram) url.searchParams.set("telegram", draft.telegram);
   }
   
-  const newTab = await chrome.tabs.create({ url: url.toString() });
+  const newTab = await chrome.tabs.create({ url: url.toString(), active: focusTab });
   
   // Wait for tab to load so relay script is injected
   await new Promise<void>(resolve => {
@@ -83,7 +89,7 @@ async function ensurePumpFunTab(draft?: FastLaunchDraft): Promise<number> {
 
 async function handleWalletStatus(sendResponse: (res: FrontendWalletStatusResponse) => void) {
   try {
-    const tabId = await ensurePumpFunTab();
+    const tabId = await ensurePumpFunTab(undefined, false);
     const id = Math.random().toString(36).substring(2, 15);
     
     // Setup listener before sending
@@ -115,7 +121,7 @@ async function handleWalletStatus(sendResponse: (res: FrontendWalletStatusRespon
 
 async function handleWalletConnect(provider: "phantom" | "solflare" | "backpack", sendResponse: (res: FrontendWalletConnectResponse) => void) {
   try {
-    const tabId = await ensurePumpFunTab();
+    const tabId = await ensurePumpFunTab(undefined, true);
     const id = Math.random().toString(36).substring(2, 15);
     
     const listener = (relayMsg: any) => {
@@ -148,7 +154,7 @@ async function handleWalletConnect(provider: "phantom" | "solflare" | "backpack"
 
 async function handleWalletDisconnect(provider: "phantom" | "solflare" | "backpack", sendResponse: (res: any) => void) {
   try {
-    const tabId = await ensurePumpFunTab();
+    const tabId = await ensurePumpFunTab(undefined, false);
     const id = Math.random().toString(36).substring(2, 15);
     
     const listener = (relayMsg: any) => {
@@ -177,7 +183,7 @@ async function handleWalletDisconnect(provider: "phantom" | "solflare" | "backpa
 async function handleFastLaunch(draft: FastLaunchDraft, sendResponse: (res: FrontendFastLaunchResponse) => void) {
   try {
     // 1. Ensure tab exists and check wallet status
-    const tabId = await ensurePumpFunTab(draft);
+    const tabId = await ensurePumpFunTab(draft, true);
     
     const statusRes = await new Promise<FrontendWalletStatusResponse>(resolve => {
       handleWalletStatus(resolve);
@@ -353,6 +359,25 @@ chrome.notifications.onButtonClicked.addListener((notifId, btnIdx) => {
 
 // Initial connection
 ensureWebSocket();
+
+// TEMPORARY DUMMY INJECTION FOR RECORDING
+let dummyCount = 0;
+setInterval(() => {
+  dummyCount++;
+  const dummyEvent = {
+    tweetId: `dummy-${Date.now()}`,
+    authorHandle: dummyCount % 2 === 0 ? "blknoiz06" : "MustStopMurad",
+    authorUserId: "123456",
+    text: `Just bought a bag of $DUMMY${dummyCount}. Looks promising. CA: ${dummyCount}zCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump`,
+    url: `https://x.com/dummy/status/${Date.now()}`,
+    isSignal: true,
+    contractAddress: `${dummyCount}zCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump`,
+    ticker: `$DUMMY${dummyCount}`,
+    postedAt: new Date().toISOString()
+  };
+  handleKolEvent(dummyEvent);
+}, 10000);
+
 
 // MV3 Keepalive mechanism
 const ALARM_NAME = "WS_KEEPALIVE_ALARM";
