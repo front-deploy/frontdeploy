@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useStorage } from "@plasmohq/storage/hook";
+import { Storage } from "@plasmohq/storage";
 
 export function KolLiveFeed() {
-  const [events] = useStorage("kolEvents", []);
+  const [events] = useStorage({ key: "kolEvents", instance: new Storage({ area: "local" }) }, []);
   
   return (
     <div className="flex flex-col gap-3 p-4">
