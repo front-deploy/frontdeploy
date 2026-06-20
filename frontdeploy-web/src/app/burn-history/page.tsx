@@ -44,27 +44,25 @@ export default async function BurnHistoryPage() {
           Transparent, verifiable on-chain records of 90% of all deployment fees being used to buy back and burn $FDP.
         </p>
 
-        {error ? (
-          <div style={{ padding: '20px', background: 'var(--danger-light)', color: 'var(--danger-dark)', borderRadius: '8px' }}>
-            {error}
-          </div>
-        ) : history.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', background: 'var(--gray-100)', borderRadius: '12px', color: 'var(--gray-500)' }}>
-            No burn records found yet. Check back soon after the next deployment batch!
-          </div>
-        ) : (
-          <div style={{ overflowX: 'auto', background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ background: 'var(--gray-100)', borderBottom: '1px solid var(--gray-200)' }}>
-                  <th style={{ padding: '16px', fontWeight: '600', color: 'var(--gray-700)' }}>Date & Time</th>
-                  <th style={{ padding: '16px', fontWeight: '600', color: 'var(--gray-700)' }}>SOL Spent</th>
-                  <th style={{ padding: '16px', fontWeight: '600', color: 'var(--gray-700)' }}>$FDP Burned</th>
-                  <th style={{ padding: '16px', fontWeight: '600', color: 'var(--gray-700)' }}>Transaction</th>
+        <div style={{ overflowX: 'auto', background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ background: 'var(--gray-100)', borderBottom: '1px solid var(--gray-200)' }}>
+                <th style={{ padding: '16px', fontWeight: '600', color: 'var(--gray-700)' }}>Date & Time</th>
+                <th style={{ padding: '16px', fontWeight: '600', color: 'var(--gray-700)' }}>SOL Spent</th>
+                <th style={{ padding: '16px', fontWeight: '600', color: 'var(--gray-700)' }}>$FDP Burned</th>
+                <th style={{ padding: '16px', fontWeight: '600', color: 'var(--gray-700)' }}>Transaction</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.length === 0 ? (
+                <tr>
+                  <td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: 'var(--gray-500)' }}>
+                    No burn records found yet. Check back soon after the next deployment batch!
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {history.map((record) => (
+              ) : (
+                history.map((record) => (
                   <tr key={record.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
                     <td style={{ padding: '16px', color: 'var(--gray-800)' }}>
                       {new Date(record.createdAt).toLocaleString(undefined, {
@@ -93,11 +91,11 @@ export default async function BurnHistoryPage() {
                       </a>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </main>
 
       <Footer />

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Instrument_Serif, DM_Sans } from "next/font/google";
 import "./globals.css";
-
+import { TokenGateProvider } from "@/contexts/TokenGateContext";
 const instrumentSerif = Instrument_Serif({
   weight: ["400"],
   style: ["normal", "italic"],
@@ -48,7 +48,11 @@ export default function RootLayout({
       lang="en"
       className={`${instrumentSerif.variable} ${dmSans.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <TokenGateProvider>
+          {children}
+        </TokenGateProvider>
+      </body>
     </html>
   );
 }
