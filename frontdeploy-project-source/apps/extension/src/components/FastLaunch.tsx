@@ -34,6 +34,25 @@ export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunch
         }
       });
     }
+
+    // Check for pending launch from desktop notifications
+    chrome.storage.local.get(["pendingFastLaunch"], (res) => {
+      if (res.pendingFastLaunch) {
+        const ticker = res.pendingFastLaunch.ticker || "";
+        setDraft(d => ({ ...d, symbol: ticker, name: ticker }));
+        chrome.storage.local.remove(["pendingFastLaunch"]);
+      }
+    });
+
+    const listener = (changes: any) => {
+      if (changes.pendingFastLaunch?.newValue) {
+        const ticker = changes.pendingFastLaunch.newValue.ticker || "";
+        setDraft(d => ({ ...d, symbol: ticker, name: ticker }));
+        chrome.storage.local.remove(["pendingFastLaunch"]);
+      }
+    };
+    chrome.storage.local.onChanged.addListener(listener);
+    return () => chrome.storage.local.onChanged.removeListener(listener);
   }, [initialDraft]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {

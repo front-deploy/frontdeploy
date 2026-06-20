@@ -1,10 +1,11 @@
 export class TwitterApiIoSource {
     logger;
     apiKey;
-    baseUrl = 'https://api.twitterapi.io/twitter/tweet/advanced_search';
+    baseUrl;
     constructor(logger) {
         this.logger = logger;
         this.apiKey = process.env.TWITTER_PROVIDER_KEY || '';
+        this.baseUrl = process.env.TWITTER_PROVIDER_BASE_URL || 'https://api.twitterapi.io/twitter/tweet/advanced_search';
         if (!this.apiKey) {
             this.logger.warn('TWITTER_PROVIDER_KEY is missing! TwitterApiIoSource will fail.');
         }

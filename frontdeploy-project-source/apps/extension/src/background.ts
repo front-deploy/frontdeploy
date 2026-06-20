@@ -323,8 +323,22 @@ chrome.notifications.onButtonClicked.addListener((notifId, btnIdx) => {
   if (notifId.startsWith("kol-")) {
     const tweetId = notifId.replace("kol-", "");
     if (btnIdx === 0) {
-      // Deploy button clicked - open pump.fun
-      chrome.tabs.create({ url: "https://pump.fun/create" });
+      // Deploy button clicked
+      chrome.storage.local.get(["kolEvents"], (result) => {
+        const event = (result.kolEvents || []).find((e: any) => e.tweetId === tweetId);
+        if (event) {
+          const ticker = event.ticker || event.contractAddress || "";
+          chrome.storage.local.set({ pendingFastLaunch: { ticker } });
+          
+          // Open side panel
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            const tab = tabs[0];
+            if (tab && tab.windowId !== undefined) {
+              chrome.sidePanel.open({ windowId: tab.windowId });
+            }
+          });
+        }
+      });
     } else if (btnIdx === 1) {
       // View Tweet
       chrome.storage.local.get(["kolEvents"], (result) => {

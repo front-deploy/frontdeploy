@@ -51,6 +51,35 @@ app.get('/watchlist', async (request, reply) => {
   }
 });
 
+app.get<{ Querystring: { handle?: string } }>('/smart-followers', async (request, reply) => {
+  try {
+    const { handle } = request.query;
+    if (!handle) {
+      return reply.status(400).send({ error: 'Handle is required' });
+    }
+
+    // Match case insensitively if possible, but let's just do exact for now or toLowerCase
+    // We assume targetHandle is saved in lowercase or exact case.
+    const followers = await prisma.smartFollowerMapping.findMany({
+      where: { 
+        targetHandle: {
+          equals: handle,
+          mode: 'insensitive' // Requires postgres
+        }
+      },
+      include: {
+        smartAccount: true
+      }
+    });
+    
+    return followers.map((f: any) => f.smartAccount);
+  } catch (error) {
+    app.log.error(error);
+    return reply.status(500).send({ error: 'Failed to fetch smart followers' });
+  }
+});
+
+
 const start = async () => {
   try {
     const port = process.env.PORT ? parseInt(process.env.PORT) : 8080;

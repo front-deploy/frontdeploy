@@ -44,7 +44,7 @@ export class IngestionPipeline {
             if (watchlist.length === 0) {
                 return; // Nothing to do
             }
-            const accounts = watchlist.map(item => item.handle);
+            const accounts = watchlist.map((item) => item.handle);
             // 2. Poll Source
             const newTweets = await this.source.pollSince(accounts, this.globalSinceId);
             if (newTweets.length > 0) {

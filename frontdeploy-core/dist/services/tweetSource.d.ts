@@ -9,10 +9,10 @@ export interface TweetEvent {
 }
 export interface TweetSource {
     /**
-     * Mengambil tweet/reply terbaru dari daftar akun
-     * @param accounts Daftar handle X/Twitter (misal: ['zachxbt', 'blknoiz06'])
-     * @param sinceId ID tweet terakhir yang ditarik, agar tidak menarik tweet duplikat
-     * @returns Array of TweetEvent (diurutkan dari yang paling lama hingga paling baru untuk event replay)
+     * Fetches the latest tweets/replies from a list of accounts
+     * @param accounts List of X/Twitter handles (e.g. ['zachxbt', 'blknoiz06'])
+     * @param sinceId The ID of the last fetched tweet, to prevent duplicate fetching
+     * @returns Array of TweetEvent (sorted from oldest to newest for chronological replay)
      */
     pollSince(accounts: string[], sinceId?: string): Promise<TweetEvent[]>;
 }

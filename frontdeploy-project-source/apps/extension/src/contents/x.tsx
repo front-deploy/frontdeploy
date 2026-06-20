@@ -40,16 +40,125 @@ function mountXLaunchScanner() {
   injectLaunchRadarStyles()
   // mountFloatingDock()
   wireActiveTweetTracking()
-  // scanTweets()
+  scanTimelineNames()
+  scanSmartFollowers()
 
   const observer = new MutationObserver(() => {
-    // window.requestIdleCallback?.(() => scanTweets()) ?? window.setTimeout(scanTweets, 120)
+    window.requestIdleCallback?.(() => {
+      scanTimelineNames()
+      scanSmartFollowers()
+    }) ?? window.setTimeout(() => {
+      scanTimelineNames()
+      scanSmartFollowers()
+    }, 120)
   })
 
   observer.observe(document.body, {
     childList: true,
     subtree: true
   })
+}
+
+function scanTimelineNames() {
+  if (!window.__AXIOM_WATCHLIST_HANDLES__) return;
+  const usernameElements = document.querySelectorAll('[data-testid="User-Name"]:not([data-axiom-tracked])');
+  for (const el of Array.from(usernameElements)) {
+    el.setAttribute("data-axiom-tracked", "true");
+    
+    const textContent = el.textContent || "";
+    const match = textContent.match(/@([a-zA-Z0-9_]+)/);
+    if (match && match[1]) {
+      const handle = match[1].toLowerCase();
+      if (window.__AXIOM_WATCHLIST_HANDLES__.has(handle)) {
+        const badge = document.createElement("span");
+        badge.className = "axiom-tracked-badge";
+        badge.textContent = "Tracked";
+        badge.style.marginLeft = "6px";
+        badge.style.padding = "2px 4px";
+        badge.style.fontSize = "10px";
+        badge.style.backgroundColor = "#111111";
+        badge.style.color = "#ffffff";
+        badge.style.borderRadius = "2px";
+        badge.style.textTransform = "uppercase";
+        badge.style.verticalAlign = "middle";
+        badge.style.display = "inline-block";
+        badge.style.lineHeight = "1";
+        badge.style.fontWeight = "bold";
+        
+        const links = el.querySelectorAll('a[href^="/"]');
+        let appended = false;
+        for (const link of Array.from(links)) {
+          if (link.textContent?.toLowerCase().includes('@' + handle)) {
+            const wrapper = link.parentElement;
+            if (wrapper) {
+              wrapper.style.display = "flex";
+              wrapper.style.alignItems = "center";
+              wrapper.appendChild(badge);
+              appended = true;
+              break;
+            }
+          }
+        }
+        
+        if (!appended) {
+          el.appendChild(badge);
+        }
+      }
+    }
+  }
+}
+
+let currentProfileUrl = "";
+async function scanSmartFollowers() {
+  if (window.location.href === currentProfileUrl && document.querySelector('.axiom-smart-followers-overlay')) {
+    return;
+  }
+  
+  const match = window.location.pathname.match(/^\/([a-zA-Z0-9_]+)$/);
+  const ignoreList = ["home", "explore", "notifications", "messages", "bookmarks", "settings", "search"];
+  if (!match || !match[1] || ignoreList.includes(match[1].toLowerCase())) return;
+  const handle = match[1];
+
+  const header = document.querySelector('[data-testid="UserProfileHeader_Items"]');
+  if (!header) return;
+
+  currentProfileUrl = window.location.href;
+  document.querySelector('.axiom-smart-followers-overlay')?.remove();
+
+  try {
+    const apiUrl = process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL || "http://localhost:8080";
+    const res = await fetch(`${apiUrl}/smart-followers?handle=${handle}`);
+    if (res.ok) {
+      const followers = await res.json();
+      if (followers && followers.length > 0) {
+        if (window.location.href !== currentProfileUrl) return;
+
+        const overlay = document.createElement("div");
+        overlay.className = "axiom-smart-followers-overlay";
+        overlay.style.marginTop = "8px";
+        overlay.style.padding = "8px 12px";
+        overlay.style.backgroundColor = "#f7f7f2";
+        overlay.style.border = "1px solid #111";
+        overlay.style.borderRadius = "4px";
+        overlay.style.fontSize = "13px";
+        overlay.style.color = "#111";
+        overlay.style.display = "flex";
+        overlay.style.alignItems = "center";
+        overlay.style.gap = "8px";
+        
+        const topHandles = followers.slice(0, 3).map((f: any) => `@${f.handle}`).join(', ');
+        
+        overlay.innerHTML = `
+          <strong style="font-weight: 700;">🧠 Smart Followers:</strong>
+          <span>Followed by ${followers.length} smart accounts (incl. ${topHandles})</span>
+        `;
+        
+        header.parentElement?.appendChild(overlay);
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to fetch smart followers", err);
+  }
 }
 
 function injectLaunchRadarStyles() {
