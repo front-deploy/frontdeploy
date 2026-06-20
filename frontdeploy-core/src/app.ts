@@ -38,7 +38,7 @@ app.get('/health', async (request, reply) => {
 app.get('/watchlist', async (request, reply) => {
   try {
     const list = await prisma.watchlist.findMany({
-      where: { active: true }
+      where: { enabled: true }
     });
     return list;
   } catch (error) {
