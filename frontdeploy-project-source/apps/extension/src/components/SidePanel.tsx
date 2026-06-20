@@ -208,7 +208,17 @@ export function SidePanel() {
 
         {activeTab === "axiom" ? (
           <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden p-4">
-            {!selected || selected.type !== "token" ? (
+            {!gateStatus?.isAllowed ? (
+              <div className="p-6 text-center mt-8">
+                <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">
+                  <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
+                <p className="mt-2 text-sm text-axiom-muted">
+                  {gateStatus?.error || "Hold 10,000,000 $FDP to unlock Axiom Pro."}
+                </p>
+              </div>
+            ) : !selected || selected.type !== "token" ? (
               <div className="p-6 text-center mt-8">
                 <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">
                   <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -230,7 +240,7 @@ export function SidePanel() {
               </div>
             ) : (
               <div className="flex flex-col gap-4">                
-                <AxiomProPanel mintAddress={selected.address} />
+                <AxiomProPanel mintAddress={selected.address} context={selected.context} />
               </div>
             )}
           </div>
@@ -308,7 +318,17 @@ export function SidePanel() {
 
       {activeTab === "axiom" ? (
         <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden p-4">
-          {!selected || selected.type !== "token" ? (
+          {!gateStatus?.isAllowed ? (
+            <div className="p-6 text-center mt-8">
+              <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">
+                <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
+              <p className="mt-2 text-sm text-axiom-muted">
+                {gateStatus?.error || "Hold 10,000,000 $FDP to unlock Axiom Pro."}
+              </p>
+            </div>
+          ) : !selected || selected.type !== "token" ? (
             <div className="p-6 text-center mt-8">
               <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">
                 <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

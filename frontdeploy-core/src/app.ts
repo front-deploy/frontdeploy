@@ -208,18 +208,24 @@ app.get<{ Params: { mint: string } }>('/v1/risk/token/:mint', async (request, re
     const isFreezeRevoked = mintInfo.freezeAuthority === null;
 
     // 2. Fetch top 10 token holders
-    const largestAccounts = await connection.getTokenLargestAccounts(mintPubkey);
-    let top10Sum = 0n;
-    for (const account of largestAccounts.value.slice(0, 10)) {
-      if (account?.amount) {
-        top10Sum += BigInt(account.amount);
+    let top10Concentration = 0;
+    let top10FetchFailed = false;
+    try {
+      const largestAccounts = await connection.getTokenLargestAccounts(mintPubkey);
+      let top10Sum = 0n;
+      for (const account of largestAccounts.value.slice(0, 10)) {
+        if (account?.amount) {
+          top10Sum += BigInt(account.amount);
+        }
       }
+      const totalSupply = mintInfo.supply;
+      top10Concentration = totalSupply > 0n 
+        ? Number((top10Sum * 100n) / totalSupply)
+        : 100;
+    } catch (err) {
+      top10FetchFailed = true;
+      app.log.warn(`Failed to fetch largest accounts for ${mint}`);
     }
-    const totalSupply = mintInfo.supply;
-    // Calculate concentration (avoid division by zero)
-    const top10Concentration = totalSupply > 0n 
-      ? Number((top10Sum * 100n) / totalSupply)
-      : 100;
 
     // 3. Simulate buy/sell via Jupiter Quote API to detect honeypot
     // We request a quote to sell a tiny fraction. If Jupiter throws or returns no routes, it might be a honeypot.
@@ -238,7 +244,15 @@ app.get<{ Params: { mint: string } }>('/v1/risk/token/:mint', async (request, re
     
     if (!isMintRevoked) { score -= 30; warnings.push("Mint authority NOT revoked."); }
     if (!isFreezeRevoked) { score -= 30; warnings.push("Freeze authority NOT revoked."); }
-    if (top10Concentration > 30) { score -= 20; warnings.push(`Top 10 holds ${top10Concentration}% of supply.`); }
+    
+    if (top10FetchFailed) {
+      score -= 10;
+      warnings.push("Could not verify Top 10 concentration (RPC overloaded).");
+    } else if (top10Concentration > 30) { 
+      score -= 20; 
+      warnings.push(`Top 10 holds ${top10Concentration}% of supply.`); 
+    }
+
     if (!jupiterSimSuccess) { score -= 50; warnings.push("Honeypot risk: Jupiter sell route failed simulation."); }
     
     if (score < 0) score = 0;
@@ -251,8 +265,8 @@ app.get<{ Params: { mint: string } }>('/v1/risk/token/:mint', async (request, re
       details: {
         mintRevoked: isMintRevoked,
         freezeRevoked: isFreezeRevoked,
-        top10Concentration,
-        honeypotSimulated: !jupiterSimSuccess
+        top10Concentration: top10FetchFailed ? "Unknown" : top10Concentration,
+        honeypotSimulated: jupiterSimSuccess
       }
     };
   } catch (error) {

@@ -14,6 +14,7 @@ export function DeveloperReputationPanel({
   context?: AxiomTokenContext | undefined
 }) {
   const contextKey = useMemo(() => JSON.stringify(context ?? {}), [context])
+  const [localContext, setLocalContext] = useState(context)
   const [websiteUrl, setWebsiteUrl] = useState(context?.websiteUrl ?? "")
   const [githubRepoUrl, setGithubRepoUrl] = useState(context?.githubRepoUrl ?? "")
   const [xPostUrl, setXPostUrl] = useState(context?.xPostUrl ?? "")
@@ -26,6 +27,7 @@ export function DeveloperReputationPanel({
   const [error, setError] = useState("")
 
   useEffect(() => {
+    setLocalContext(context)
     setWebsiteUrl(context?.websiteUrl ?? "")
     setGithubRepoUrl(context?.githubRepoUrl ?? "")
     setXPostUrl(context?.xPostUrl ?? "")
@@ -90,7 +92,7 @@ export function DeveloperReputationPanel({
         <div>
           <p className="text-xs font-bold uppercase text-axiom-muted">Developer reputation</p>
           <h2 className="mt-1 text-sm font-semibold">
-            {context ? "Auto proof from Axiom card" : "Project proof audit"}
+            {localContext ? "Auto proof from Axiom card" : "Project proof audit"}
           </h2>
         </div>
         {result ? (
@@ -98,14 +100,14 @@ export function DeveloperReputationPanel({
         ) : null}
       </div>
 
-      {context ? (
+      {localContext ? (
         <div className="mt-3 rounded-sm border border-axiom-border bg-axiom-bg p-2 text-xs leading-5 text-axiom-muted">
           <p>
-            Detected {context.ticker ?? "token"} from Axiom card
-            {context.deployerHandle ? `, social @${context.deployerHandle}` : ""}.
+            Detected {localContext.ticker ?? "token"} from Axiom card
+            {localContext.deployerHandle ? `, social @${localContext.deployerHandle}` : ""}.
           </p>
           <p className="mt-1 break-all font-mono text-[11px] text-axiom-text">
-            {context.shortAddress ?? context.address}
+            {localContext.shortAddress ?? localContext.address}
           </p>
         </div>
       ) : null}
@@ -146,13 +148,31 @@ export function DeveloperReputationPanel({
         </label>
       </div>
 
-      <button
-        type="button"
-        className="mt-3 rounded-sm bg-axiom-accent px-3 py-2 text-sm font-bold text-white transition hover:bg-axiom-muted disabled:cursor-not-allowed disabled:bg-axiom-muted"
-        disabled={loading}
-        onClick={() => void runAudit()}>
-        {loading ? "Auditing" : "Audit proof"}
-      </button>
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          className="rounded-sm bg-axiom-accent px-3 py-2 text-sm font-bold text-white transition hover:bg-axiom-muted disabled:cursor-not-allowed disabled:bg-axiom-muted"
+          disabled={loading}
+          onClick={() => void runAudit()}>
+          {loading ? "Auditing" : "Audit proof"}
+        </button>
+        <button
+          type="button"
+          className="rounded-sm border border-axiom-border bg-white px-3 py-2 text-sm font-bold text-axiom-text transition hover:bg-axiom-bg disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={loading}
+          onClick={() => {
+            setLocalContext(undefined)
+            setWebsiteUrl("")
+            setGithubRepoUrl("")
+            setXPostUrl("")
+            setMarketCap("")
+            setNarrative("")
+            setResult(null)
+            setError("")
+          }}>
+          Reset
+        </button>
+      </div>
 
       {error ? <p className="mt-2 text-xs text-axiom-bad">{error}</p> : null}
 
