@@ -118,8 +118,8 @@ export class IngestionPipeline {
         text: payload.text,
         url: payload.url,
         isSignal: payload.isSignal,
-        contractAddress: payload.contractAddress,
-        ticker: payload.ticker,
+        contractAddress: payload.contractAddress ?? null,
+        ticker: payload.ticker ?? null,
         postedAt: payload.postedAt,
       }
     }).catch((err: any) => {

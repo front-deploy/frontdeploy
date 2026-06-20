@@ -7,7 +7,7 @@ export interface KolEventPayload {
     isSignal: boolean;
     contractAddress?: string | null;
     ticker?: string | null;
-    postedAt: string;
+    postedAt: string | Date;
 }
 export declare class WebSocketService {
     private app;

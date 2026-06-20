@@ -58,7 +58,7 @@ export function SidePanel() {
     verifyGate();
 
     const listener = (changes: any) => {
-      if (changes.walletSession) {
+      if (changes["axiomIntelligence.walletSession"]) {
         verifyGate();
       }
     };
@@ -79,7 +79,7 @@ export function SidePanel() {
     if (typeof chrome === "undefined" || !chrome.storage?.onChanged) return
 
     const handleChange = (changes: any) => {
-      if (changes.selectedAddress || changes.selectedLaunchContext) {
+      if (changes["axiomIntelligence.selected"] || changes["axiomIntelligence.launchContext"]) {
         void refreshSelected()
       }
     }
@@ -169,17 +169,7 @@ export function SidePanel() {
     );
   }
 
-  if (!gateStatus?.isAllowed) {
-    return (
-      <main className="min-h-screen bg-axiom-bg p-4 text-axiom-text">
-        <PanelHeader />
-        <div className="-mx-4 border-b border-axiom-border pb-2 mb-4">
-          <LaunchPanel />
-        </div>
-        <SidePanelFooter />
-      </main>
-    );
-  }
+
 
   if (!selected || !intelligence) {
     return (
@@ -206,7 +196,19 @@ export function SidePanel() {
 
         {activeTab === "kol" ? (
           <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden">
-            <KolLiveFeed />
+            {!gateStatus?.isAllowed ? (
+              <div className="p-6 text-center mt-8">
+                <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">
+                  <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
+                <p className="mt-2 text-sm text-axiom-muted">
+                  {gateStatus?.error || "Hold 10,000,000 $FDP to unlock the realtime KOL Live Feed."}
+                </p>
+              </div>
+            ) : (
+              <KolLiveFeed />
+            )}
           </div>
         ) : (
           <>
@@ -260,7 +262,19 @@ export function SidePanel() {
 
       {activeTab === "kol" ? (
         <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden">
-          <KolLiveFeed />
+          {!gateStatus?.isAllowed ? (
+            <div className="p-6 text-center mt-8">
+              <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">
+                <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
+              <p className="mt-2 text-sm text-axiom-muted">
+                {gateStatus?.error || "Hold 10,000,000 $FDP to unlock the realtime KOL Live Feed."}
+              </p>
+            </div>
+          ) : (
+            <KolLiveFeed />
+          )}
         </div>
       ) : (
         <>
