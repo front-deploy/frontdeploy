@@ -19,11 +19,15 @@ export class WebSocketService {
             // Fetch and send recent events from the database so the client has immediate data
             try {
                 const recentEvents = await prisma.kolEvent.findMany({
-                    orderBy: { postedAt: 'asc' },
+                    orderBy: { postedAt: 'desc' }, // get latest 10
                     take: 10
                 });
+                // Reverse to send oldest first
+                recentEvents.reverse();
                 for (const event of recentEvents) {
-                    connection.send(JSON.stringify({ type: 'kol_event', data: event }));
+                    if (connection.readyState === 1) { // 1 == WebSocket.OPEN
+                        connection.send(JSON.stringify({ type: 'kol_event', data: event }));
+                    }
                 }
             }
             catch (err) {

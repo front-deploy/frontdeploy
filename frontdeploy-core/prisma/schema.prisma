@@ -88,3 +88,22 @@ model BurnHistory {
 
   @@map("frontdeploy_burn_history")
 }
+
+// ------------------------------------
+// Pro Features / Deployer Intel
+// ------------------------------------
+
+model DeployerHistory {
+  id              String   @id @default(uuid())
+  walletAddress   String   @unique
+  totalLaunches   Int      @default(0)
+  ruggedLaunches  Int      @default(0)
+  walletAgeDays   Int      @default(0)
+  riskScore       Int      @default(50)
+  riskLevel       String   @default("watch")
+  fundingSource   String?  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("frontdeploy_deployer_history")
+}

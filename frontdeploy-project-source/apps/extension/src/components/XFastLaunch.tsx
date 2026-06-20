@@ -13,7 +13,8 @@ export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunch
   });
   
   const [settings, setSettings] = useState<LaunchSettings>({
-    ipfsProvider: "pinata",
+    ipfsProvider: "pumpfun",
+    pinataJwt: "",
     devBuySol: 0,
     slippage: 5,
     priorityFee: 0.0005
@@ -110,17 +111,8 @@ export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunch
         <div className="flex flex-col gap-2 mt-2">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-axiom-muted">IPFS Provider</label>
-            <select className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs text-axiom-text focus:outline-none" value={settings.ipfsProvider} onChange={e => setSettings(s => ({ ...s, ipfsProvider: e.target.value as any }))}>
-              <option value="pinata">Pinata (Recommended)</option>
-              <option value="pumpfun">Pump.fun (Fallback)</option>
-            </select>
+            <input disabled className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs text-axiom-text focus:outline-none opacity-50 cursor-not-allowed" value="Pump.fun (Default)" />
           </div>
-          {settings.ipfsProvider === "pinata" && (
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-axiom-muted">Pinata JWT</label>
-              <input type="password" className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs text-axiom-text focus:outline-none" value={settings.pinataJwt || ""} onChange={e => setSettings(s => ({ ...s, pinataJwt: e.target.value }))} />
-            </div>
-          )}
           <div className="flex gap-2">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-axiom-muted">Dev Buy (SOL)</label>

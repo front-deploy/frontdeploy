@@ -83,6 +83,112 @@ app.get('/burn-history', async (request, reply) => {
         return reply.status(500).send({ error: 'Failed to fetch burn history' });
     }
 });
+app.post('/v1/reputation/developer', async (request, reply) => {
+    try {
+        const body = request.body;
+        if (!body || !body.tokenAddress) {
+            return reply.status(400).send({ error: 'tokenAddress is required' });
+        }
+        const walletAddress = body.tokenAddress; // Simplification: assuming we look up by token address or creator address.
+        // In reality we'd use Helius to find creator of tokenAddress, then look up creator in DB.
+        // Let's return a simulated response matching ReputationResponse type for now.
+        let deployer = await prisma.deployerHistory.findUnique({
+            where: { walletAddress }
+        });
+        if (!deployer) {
+            // Create a mock deployer for demonstration if not found
+            deployer = await prisma.deployerHistory.create({
+                data: {
+                    walletAddress,
+                    totalLaunches: Math.floor(Math.random() * 10),
+                    ruggedLaunches: Math.floor(Math.random() * 3),
+                    walletAgeDays: Math.floor(Math.random() * 100),
+                    riskScore: 65,
+                    riskLevel: "watch",
+                    fundingSource: "CEX",
+                }
+            });
+        }
+        return {
+            score: deployer.riskScore,
+            level: deployer.riskLevel,
+            summary: `Deployer has ${deployer.totalLaunches} previous launches, ${deployer.ruggedLaunches} rugs. Wallet is ${deployer.walletAgeDays} days old.`,
+            checks: [
+                {
+                    name: "Rug History",
+                    status: deployer.ruggedLaunches > 0 ? "fail" : "pass",
+                    detail: `${deployer.ruggedLaunches} past rugs detected.`,
+                    weight: 40
+                },
+                {
+                    name: "Wallet Age",
+                    status: deployer.walletAgeDays > 30 ? "pass" : "warn",
+                    detail: `Wallet is ${deployer.walletAgeDays} days old.`,
+                    weight: 20
+                }
+            ],
+            evidence: {
+                websiteCaFound: false,
+                githubCaFound: false,
+                xCaFound: false
+            }
+        };
+    }
+    catch (error) {
+        app.log.error(error);
+        return reply.status(500).send({ error: 'Failed to audit developer reputation' });
+    }
+});
+app.get('/v1/risk/token/:mint', async (request, reply) => {
+    try {
+        const { mint } = request.params;
+        // In a real implementation:
+        // 1. Fetch mint authority / freeze authority via Helius RPC
+        // 2. Fetch top 10 token holders via Helius getTokenLargestAccounts
+        // 3. Simulate buy/sell via Jupiter Quote API to detect honeypot (100% sell tax or revert)
+        // Simulation:
+        const isMintRevoked = true;
+        const isFreezeRevoked = true;
+        const top10Concentration = Math.floor(Math.random() * 40) + 10; // 10% to 50%
+        const jupiterSimSuccess = Math.random() > 0.1; // 10% chance of failing simulated sell
+        let score = 100;
+        const warnings = [];
+        if (!isMintRevoked) {
+            score -= 30;
+            warnings.push("Mint authority NOT revoked.");
+        }
+        if (!isFreezeRevoked) {
+            score -= 30;
+            warnings.push("Freeze authority NOT revoked.");
+        }
+        if (top10Concentration > 30) {
+            score -= 20;
+            warnings.push(`Top 10 holds ${top10Concentration}% of supply.`);
+        }
+        if (!jupiterSimSuccess) {
+            score -= 50;
+            warnings.push("Honeypot risk: Jupiter sell route failed simulation.");
+        }
+        if (score < 0)
+            score = 0;
+        return {
+            mint,
+            score,
+            level: score >= 80 ? "low" : score >= 50 ? "medium" : "high",
+            warnings,
+            details: {
+                mintRevoked: isMintRevoked,
+                freezeRevoked: isFreezeRevoked,
+                top10Concentration,
+                honeypotSimulated: !jupiterSimSuccess
+            }
+        };
+    }
+    catch (error) {
+        app.log.error(error);
+        return reply.status(500).send({ error: 'Failed to scan token risk' });
+    }
+});
 const start = async () => {
     try {
         const port = process.env.PORT ? parseInt(process.env.PORT) : 8080;

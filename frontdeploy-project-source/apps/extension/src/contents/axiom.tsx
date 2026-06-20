@@ -9,6 +9,7 @@ import {
   detectSolanaAddresses,
   type DetectedSolanaAddress
 } from "../lib/detectSolanaAddress"
+import { ChartOverlay } from "../components/ChartOverlay"
 import {
   findAxiomTokenCards,
   markTokenCardProcessed,
@@ -101,36 +102,55 @@ async function mountOverlay() {
   }
 }
 
+let activeChartMint: string | null = null
+let chartOverlayElement: HTMLElement | null = null
+
+function checkChartPage() {
+  if (!isOverlayVisible(currentSettings)) {
+    if (chartOverlayElement) {
+      chartOverlayElement.remove()
+      chartOverlayElement = null
+      activeChartMint = null
+    }
+    return
+  }
+
+  // Axiom trade token URL format usually includes the mint
+  // e.g., https://axiom.trade/token/2vCw...pump or /meme/2vCw...pump
+  const match = window.location.href.match(/\/(?:token|meme)\/([1-9A-HJ-NP-Za-km-z]{32,44})/) || window.location.href.match(/token=([1-9A-HJ-NP-Za-km-z]{32,44})/)
+  const mint = match ? match[1] : null
+
+  if (mint && mint !== activeChartMint) {
+    // Clean up old overlay if exists
+    if (chartOverlayElement) {
+      chartOverlayElement.remove()
+    }
+    
+    activeChartMint = mint
+    chartOverlayElement = document.createElement("div")
+    chartOverlayElement.id = "axiom-chart-overlay-root"
+    document.body.appendChild(chartOverlayElement)
+    
+    createRoot(chartOverlayElement).render(<ChartOverlay mintAddress={mint} />)
+  } else if (!mint && activeChartMint) {
+    if (chartOverlayElement) {
+      chartOverlayElement.remove()
+      chartOverlayElement = null
+    }
+    activeChartMint = null
+  }
+}
+
 function scanDocument() {
+  checkChartPage()
+
   if (!isOverlayVisible(currentSettings)) return
 
   annotateTokenCards()
 
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
-      const parent = node.parentElement
-      if (!parent || parent.closest(`[${PROCESSED_ATTR}]`)) {
-        return NodeFilter.FILTER_REJECT
-      }
-
-      if (SKIP_TAGS.has(parent.tagName)) {
-        return NodeFilter.FILTER_REJECT
-      }
-
-      return detectSolanaAddresses(node.textContent ?? "").length > 0
-        ? NodeFilter.FILTER_ACCEPT
-        : NodeFilter.FILTER_REJECT
-    }
-  })
-
-  const nodes: Text[] = []
-  while (walker.nextNode()) {
-    nodes.push(walker.currentNode as Text)
-  }
-
-  for (const node of nodes) {
-    annotateTextNode(node)
-  }
+  // NOTE: We no longer scan and mutate random text nodes via TreeWalker.
+  // Replacing TextNodes with DocumentFragments causes Axiom's React 18 reconciliation to crash 
+  // with a "NotFoundError" when it attempts to unmount or update those nodes, leading to a blank white screen.
 }
 
 function annotateTokenCards() {
@@ -159,40 +179,6 @@ function annotateTokenCards() {
       />
     )
   }
-}
-
-function annotateTextNode(node: Text) {
-  const text = node.textContent ?? ""
-  const detections = detectSolanaAddresses(text)
-  if (detections.length === 0 || !node.parentNode) return
-
-  const fragment = document.createDocumentFragment()
-  let cursor = 0
-
-  for (const detection of detections) {
-    if (detection.start > cursor) {
-      fragment.append(document.createTextNode(text.slice(cursor, detection.start)))
-    }
-
-    const addressText = document.createElement("span")
-    addressText.textContent = detection.address
-    addressText.setAttribute(PROCESSED_ATTR, "true")
-    fragment.append(addressText)
-
-    const badgeMount = document.createElement("span")
-    badgeMount.setAttribute(PROCESSED_ATTR, "true")
-    badgeMount.className = "axiom-intel-inline relative inline-flex align-middle"
-    fragment.append(badgeMount)
-    createRoot(badgeMount).render(<InlineIntelligence detection={detection} />)
-
-    cursor = detection.end
-  }
-
-  if (cursor < text.length) {
-    fragment.append(document.createTextNode(text.slice(cursor)))
-  }
-
-  node.parentNode.replaceChild(fragment, node)
 }
 
 function isOverlayVisible(settings: OverlaySettings) {
@@ -313,3 +299,7 @@ function InlineIntelligence({
 }
 
 void mountOverlay()
+
+export default function AxiomCSUI() {
+  return null
+}

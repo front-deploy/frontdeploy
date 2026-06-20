@@ -10,7 +10,7 @@ export async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
 export async function uploadMetadata(draft: FastLaunchDraft): Promise<string> {
   const settings = await getLaunchSettings();
   
-  if (settings.ipfsProvider === "pinata" && settings.pinataJwt) {
+  if ((settings.ipfsProvider as any) === "pinata" && settings.pinataJwt) {
     try {
       const blob = await dataUrlToBlob(draft.image);
       const formData = new FormData();

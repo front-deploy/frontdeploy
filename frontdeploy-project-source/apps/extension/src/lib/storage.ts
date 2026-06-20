@@ -34,7 +34,7 @@ export interface WalletSession {
 }
 
 export interface LaunchSettings {
-  ipfsProvider: "pinata" | "pumpfun"
+  ipfsProvider: "pumpfun"
   pinataJwt?: string
   rpcUrl?: string
   devBuySol: number
@@ -49,11 +49,11 @@ const DEFAULT_SETTINGS: OverlaySettings = {
 
 const DEFAULT_API_SETTINGS: ApiSettings = {
   liveDataEnabled: true,
-  backendUrl: "http://127.0.0.1:8787"
+  backendUrl: process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL || "http://127.0.0.1:8080"
 }
 
 const DEFAULT_LAUNCH_SETTINGS: LaunchSettings = {
-  ipfsProvider: "pinata",
+  ipfsProvider: "pumpfun",
   devBuySol: 0,
   slippage: 5,
   priorityFee: 0.0005

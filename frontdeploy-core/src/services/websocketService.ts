@@ -17,6 +17,7 @@ export interface KolEventPayload {
 
 export class WebSocketService {
   private connections: Set<WebSocket> = new Set();
+  private tokenSubscriptions: Map<string, Set<WebSocket>> = new Map();
 
   constructor(private app: FastifyInstance) {}
 
@@ -25,9 +26,52 @@ export class WebSocketService {
       this.app.log.info('New client connected to KOL alerts stream');
       this.connections.add(connection);
 
+      connection.on('message', (message: string) => {
+        try {
+          const payload = JSON.parse(message.toString());
+          if (payload.action === 'subscribe' && payload.mint) {
+            if (!this.tokenSubscriptions.has(payload.mint)) {
+              this.tokenSubscriptions.set(payload.mint, new Set());
+            }
+            this.tokenSubscriptions.get(payload.mint)!.add(connection);
+            this.app.log.info(`Client subscribed to mint: ${payload.mint}`);
+            
+            // Simulate initial smart money feed for testing
+            setTimeout(() => {
+              if (connection.readyState === 1) {
+                connection.send(JSON.stringify({
+                  type: 'smart_money',
+                  data: {
+                    mint: payload.mint,
+                    action: 'BUY',
+                    amount: '150.5 SOL',
+                    walletLabel: 'Whale'
+                  }
+                }));
+              }
+            }, 2000);
+          } else if (payload.action === 'unsubscribe' && payload.mint) {
+            if (this.tokenSubscriptions.has(payload.mint)) {
+              this.tokenSubscriptions.get(payload.mint)!.delete(connection);
+              this.app.log.info(`Client unsubscribed from mint: ${payload.mint}`);
+            }
+          }
+        } catch (e) {
+          this.app.log.error('Invalid WS message received');
+        }
+      });
+
       connection.on('close', () => {
         this.app.log.info('Client disconnected');
         this.connections.delete(connection);
+        
+        // Remove from all subscriptions
+        for (const [mint, subs] of this.tokenSubscriptions.entries()) {
+          subs.delete(connection);
+          if (subs.size === 0) {
+            this.tokenSubscriptions.delete(mint);
+          }
+        }
       });
 
       // Send a welcome message
