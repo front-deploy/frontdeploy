@@ -73,3 +73,18 @@ model SmartFollowerMapping {
   @@index([targetHandle])
   @@map("frontdeploy_smart_follower_mapping")
 }
+
+// ------------------------------------
+// Finance / Treasury (Phase X)
+// ------------------------------------
+
+model BurnHistory {
+  id          String   @id @default(uuid())
+  solSpent    Float
+  fdpBought   Float?
+  fdpBurned   Float
+  txHash      String   @unique
+  createdAt   DateTime @default(now())
+
+  @@map("frontdeploy_burn_history")
+}

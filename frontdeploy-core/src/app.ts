@@ -79,6 +79,18 @@ app.get<{ Querystring: { handle?: string } }>('/smart-followers', async (request
   }
 });
 
+app.get('/burn-history', async (request, reply) => {
+  try {
+    const history = await prisma.burnHistory.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    });
+    return history;
+  } catch (error) {
+    app.log.error(error);
+    return reply.status(500).send({ error: 'Failed to fetch burn history' });
+  }
+});
 
 const start = async () => {
   try {

@@ -70,6 +70,19 @@ app.get('/smart-followers', async (request, reply) => {
         return reply.status(500).send({ error: 'Failed to fetch smart followers' });
     }
 });
+app.get('/burn-history', async (request, reply) => {
+    try {
+        const history = await prisma.burnHistory.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: 50
+        });
+        return history;
+    }
+    catch (error) {
+        app.log.error(error);
+        return reply.status(500).send({ error: 'Failed to fetch burn history' });
+    }
+});
 const start = async () => {
     try {
         const port = process.env.PORT ? parseInt(process.env.PORT) : 8080;
