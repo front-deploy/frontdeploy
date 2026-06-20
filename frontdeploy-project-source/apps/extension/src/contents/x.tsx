@@ -143,7 +143,8 @@ declare global {
 
 async function fetchWatchlist() {
   try {
-    const res = await fetch("http://localhost:8080/watchlist");
+    const apiUrl = process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL || "http://localhost:8080";
+    const res = await fetch(`${apiUrl}/watchlist`);
     if (res.ok) {
       const list = await res.json();
       const handles = new Set<string>();

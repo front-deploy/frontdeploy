@@ -236,7 +236,7 @@ async function handleFastLaunch(draft: FastLaunchDraft, sendResponse: (res: Fron
 // ------------------------------------------------------------------
 
 const KEEPALIVE_INTERVAL_SEC = 25;
-const WS_URL = "ws://localhost:8080/ws/kol-alerts";
+const WS_URL = process.env.PLASMO_PUBLIC_FRONTDEPLOY_WS_URL || "ws://localhost:8080/ws/kol-alerts";
 let ws: WebSocket | null = null;
 let keepAliveIntervalId: ReturnType<typeof setInterval> | null = null;
 
