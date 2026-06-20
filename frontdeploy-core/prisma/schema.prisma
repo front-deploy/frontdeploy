@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ------------------------------------
+// KOL Alerts (Phase 4)
+// ------------------------------------
+
+model Watchlist {
+  id        String   @id @default(uuid())
+  handle    String   @unique
+  userId    String   @unique // Numeric string ID from X
+  tier      String   // "A", "B", "C", "D"
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("frontdeploy_watchlist")
+}
+
+model KolEvent {
+  id              String   @id @default(uuid())
+  tweetId         String   @unique
+  authorHandle    String
+  authorUserId    String
+  text            String
+  url             String
+  isSignal        Boolean  @default(false)
+  contractAddress String?
+  ticker          String?
+  postedAt        DateTime
+  createdAt       DateTime @default(now())
+
+  @@map("frontdeploy_kol_event")
+}
+
+// ------------------------------------
+// Smart Followers (Phase 5)
+// ------------------------------------
+
+model SmartAccount {
+  id            String   @id @default(uuid())
+  handle        String   @unique
+  userId        String?  @unique // Numeric string ID from X
+  category      String?  // e.g., "tier-A", "whale", "dev"
+  followerCount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  mappings      SmartFollowerMapping[]
+
+  @@map("frontdeploy_smart_account")
+}
+
+model SmartFollowerMapping {
+  id             String   @id @default(uuid())
+  targetHandle   String   // The account being followed
+  smartAccountId String
+  detectedAt     DateTime @default(now())
+
+  smartAccount   SmartAccount @relation(fields: [smartAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([targetHandle, smartAccountId])
+  @@index([targetHandle])
+  @@map("frontdeploy_smart_follower_mapping")
+}

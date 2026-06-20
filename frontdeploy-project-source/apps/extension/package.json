@@ -41,7 +41,9 @@
       "storage",
       "sidePanel",
       "scripting",
-      "tabs"
+      "tabs",
+      "notifications",
+      "alarms"
     ],
     "host_permissions": [
       "https://axiom.trade/*",
@@ -52,6 +54,10 @@
       "https://pump.fun/*",
       "http://127.0.0.1:8787/*",
       "http://localhost:8787/*",
+      "http://127.0.0.1:8080/*",
+      "http://localhost:8080/*",
+      "ws://127.0.0.1:8080/*",
+      "ws://localhost:8080/*",
       "https://www.pump.fun/*",
       "https://pumpportal.fun/*",
       "https://uploads.pinata.cloud/*",

@@ -230,3 +230,112 @@ async function handleFastLaunch(draft: FastLaunchDraft, sendResponse: (res: Fron
     sendResponse({ success: false, error: err.message });
   }
 }
+
+// ------------------------------------------------------------------
+// KOL Alerts & MV3 Keepalive (Phase 4)
+// ------------------------------------------------------------------
+
+const KEEPALIVE_INTERVAL_SEC = 25;
+const WS_URL = "ws://localhost:8080/ws/kol-alerts";
+let ws: WebSocket | null = null;
+let keepAliveIntervalId: ReturnType<typeof setInterval> | null = null;
+
+chrome.alarms.create("keepAlive", { periodInMinutes: KEEPALIVE_INTERVAL_SEC / 60 });
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "keepAlive") {
+    console.log("Keepalive alarm triggered");
+    ensureWebSocket();
+  }
+});
+
+function ensureWebSocket() {
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    return;
+  }
+
+  console.log("Connecting to KOL Alerts WS...");
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    console.log("KOL Alerts WS connected");
+    if (keepAliveIntervalId) clearInterval(keepAliveIntervalId);
+    // Send a ping every 20s to keep the WS connection alive
+    keepAliveIntervalId = setInterval(() => {
+      if (ws?.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "ping" }));
+      }
+    }, 20000);
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === "kol_event") {
+        handleKolEvent(data.data);
+      }
+    } catch (err) {
+      console.error("Error parsing WS message", err);
+    }
+  };
+
+  ws.onclose = () => {
+    console.log("KOL Alerts WS closed");
+    ws = null;
+    if (keepAliveIntervalId) clearInterval(keepAliveIntervalId);
+  };
+
+  ws.onerror = (err) => {
+    console.error("KOL Alerts WS error", err);
+    ws?.close();
+  };
+}
+
+function handleKolEvent(event: any) {
+  // Save to local storage for the KolLiveFeed component to read
+  chrome.storage.local.get(["kolEvents"], (result) => {
+    const events = result.kolEvents || [];
+    events.unshift(event);
+    // Keep max 100 events
+    if (events.length > 100) events.length = 100;
+    chrome.storage.local.set({ kolEvents: events });
+  });
+
+  // Only notify if it's a signal
+  if (event.isSignal) {
+    const notifId = `kol-${event.tweetId}`;
+    chrome.notifications.create(notifId, {
+      type: "basic",
+      iconUrl: chrome.runtime.getURL("icon.png") || "icon.png", // fallback
+      title: `🚨 Signal from @${event.authorHandle}`,
+      message: `${event.ticker || event.contractAddress} detected!\n${event.text}`,
+      buttons: [
+        { title: "Deploy (pump.fun)" },
+        { title: "View Tweet" }
+      ],
+      priority: 2,
+      requireInteraction: true
+    });
+  }
+}
+
+chrome.notifications.onButtonClicked.addListener((notifId, btnIdx) => {
+  if (notifId.startsWith("kol-")) {
+    const tweetId = notifId.replace("kol-", "");
+    if (btnIdx === 0) {
+      // Deploy button clicked - open pump.fun
+      chrome.tabs.create({ url: "https://pump.fun/create" });
+    } else if (btnIdx === 1) {
+      // View Tweet
+      chrome.storage.local.get(["kolEvents"], (result) => {
+        const event = (result.kolEvents || []).find((e: any) => e.tweetId === tweetId);
+        if (event && event.url) {
+          chrome.tabs.create({ url: event.url });
+        }
+      });
+    }
+  }
+});
+
+// Initial connection
+ensureWebSocket();

@@ -56,7 +56,7 @@ export async function checkTokenGate(publicKeyBase58: string | undefined): Promi
       return {
         isAllowed: false,
         balance: totalBalance,
-        error: `You need at least ${MIN_BALANCE.toLocaleString()} $FDP to unlock. Your balance is ${totalBalance.toLocaleString()} $FDP.`
+        error: `You need to hold at least 1% of the supply (${MIN_BALANCE.toLocaleString()} $FDP) to unlock. Your balance is ${totalBalance.toLocaleString()} $FDP.`
       };
     } else {
       console.info(`[TokenGate Debug] Access granted: User ${publicKeyBase58} has ${totalBalance} $FDP.`);

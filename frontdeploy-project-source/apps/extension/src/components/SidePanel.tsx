@@ -21,8 +21,10 @@ import {
 } from "../lib/xLaunchContext"
 import { DeveloperReputationPanel } from "./DeveloperReputationPanel"
 import { LaunchPanel } from "./LaunchPanel"
+import { KolLiveFeed } from "./KolLiveFeed"
 
 export function SidePanel() {
+  const [activeTab, setActiveTab] = useState<"radar" | "kol">("kol")
   const [selected, setSelected] = useState<SelectedAddress | null>(null)
   const [launchContext, setLaunchContext] = useState<XReplyContext | null>(null)
   const [copied, setCopied] = useState("")
@@ -180,25 +182,49 @@ export function SidePanel() {
         <div className="-mx-4 border-b border-axiom-border pb-2 mb-4">
           <LaunchPanel />
         </div>
-        <LaunchWorkspace
-          context={launchContext}
-          copied={copied}
-          onCopy={(label, value) => void copyText(label, value)}
-          onOpenLogo={(draft) => void openLogoGenerator(draft)}
-        />
-        <ManualInspector
-          address={manualAddress}
-          error={manualError}
-          type={manualType}
-          onAddressChange={setManualAddress}
-          onTypeChange={setManualType}
-          onInspect={() => void handleInspectManualAddress()}
-        />
-        <section className="mt-6 rounded-sm border border-axiom-border bg-white p-4">
-          <p className="text-sm text-axiom-muted">
-            Axiom wallet and token intelligence is available below the launch workspace.
-          </p>
-        </section>
+
+        <div className="flex items-center gap-4 mb-4 border-b border-axiom-border pb-2">
+          <button 
+            onClick={() => setActiveTab("radar")}
+            className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'radar' ? 'text-white border-white' : 'text-axiom-muted border-transparent hover:text-white/80'}`}
+          >
+            Launch Radar
+          </button>
+          <button 
+            onClick={() => setActiveTab("kol")}
+            className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'kol' ? 'text-white border-white' : 'text-axiom-muted border-transparent hover:text-white/80'}`}
+          >
+            KOL Live
+          </button>
+        </div>
+
+        {activeTab === "kol" ? (
+          <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden">
+            <KolLiveFeed />
+          </div>
+        ) : (
+          <>
+            <LaunchWorkspace
+              context={launchContext}
+              copied={copied}
+              onCopy={(label, value) => void copyText(label, value)}
+              onOpenLogo={(draft) => void openLogoGenerator(draft)}
+            />
+            <ManualInspector
+              address={manualAddress}
+              error={manualError}
+              type={manualType}
+              onAddressChange={setManualAddress}
+              onTypeChange={setManualType}
+              onInspect={() => void handleInspectManualAddress()}
+            />
+            <section className="mt-6 rounded-sm border border-axiom-border bg-white p-4">
+              <p className="text-sm text-axiom-muted">
+                Axiom wallet and token intelligence is available below the launch workspace.
+              </p>
+            </section>
+          </>
+        )}
         <SidePanelFooter />
       </main>
     )
@@ -210,22 +236,44 @@ export function SidePanel() {
       <div className="-mx-4 border-b border-axiom-border pb-2 mb-4">
         <LaunchPanel />
       </div>
-      <LaunchWorkspace
-        context={launchContext}
-        copied={copied}
-        onCopy={(copyLabel, value) => void copyText(copyLabel, value)}
-        onOpenLogo={(draft) => void openLogoGenerator(draft)}
-      />
-      <ManualInspector
-        address={manualAddress}
-        error={manualError}
-        type={manualType}
-        onAddressChange={setManualAddress}
-        onTypeChange={setManualType}
-        onInspect={() => void handleInspectManualAddress()}
-      />
 
-      <section className="mt-4 space-y-4">
+      <div className="flex items-center gap-4 mb-4 border-b border-axiom-border pb-2">
+        <button 
+          onClick={() => setActiveTab("radar")}
+          className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'radar' ? 'text-white border-white' : 'text-axiom-muted border-transparent hover:text-white/80'}`}
+        >
+          Launch Radar
+        </button>
+        <button 
+          onClick={() => setActiveTab("kol")}
+          className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'kol' ? 'text-white border-white' : 'text-axiom-muted border-transparent hover:text-white/80'}`}
+        >
+          KOL Live
+        </button>
+      </div>
+
+      {activeTab === "kol" ? (
+        <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden">
+          <KolLiveFeed />
+        </div>
+      ) : (
+        <>
+          <LaunchWorkspace
+            context={launchContext}
+            copied={copied}
+            onCopy={(copyLabel, value) => void copyText(copyLabel, value)}
+            onOpenLogo={(draft) => void openLogoGenerator(draft)}
+          />
+          <ManualInspector
+            address={manualAddress}
+            error={manualError}
+            type={manualType}
+            onAddressChange={setManualAddress}
+            onTypeChange={setManualType}
+            onInspect={() => void handleInspectManualAddress()}
+          />
+
+          <section className="mt-4 space-y-4">
         <div className="rounded-sm border border-axiom-border bg-white p-4">
           <p className="text-xs uppercase text-axiom-muted">{selected.type}</p>
           <p className="mt-2 break-all font-mono text-sm text-axiom-text">
@@ -290,11 +338,12 @@ export function SidePanel() {
             ))}
           </ul>
         </div>
-
         {selected.type === "token" ? (
           <DeveloperReputationPanel tokenAddress={selected.address} context={selected.context} />
         ) : null}
       </section>
+    </>
+  )}
       <SidePanelFooter />
     </main>
   )
@@ -552,7 +601,20 @@ function SidePanelFooter() {
           {process.env.PLASMO_PUBLIC_FRONTDEPLOY_CA}
         </a>
       </div>
-      <div>Version 1.0.0</div>
+      <div className="flex items-center justify-between">
+        <span>Version 1.0.0</span>
+        <a 
+          href="https://x.com/frontdeploy1" 
+          target="_blank" 
+          rel="noreferrer"
+          className="text-axiom-text hover:text-axiom-muted transition-colors flex items-center gap-1"
+        >
+          <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+          <span className="sr-only">Twitter / X</span>
+        </a>
+      </div>
     </footer>
   )
 }

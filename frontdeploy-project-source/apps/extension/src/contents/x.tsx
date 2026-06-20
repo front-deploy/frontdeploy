@@ -137,6 +137,24 @@ declare global {
   interface Window {
     __AXIOM_LAUNCH_RADAR_BOOTED__?: boolean
     __AXIOM_LAUNCH_RADAR_ACTIVE_CONTEXT__?: XReplyContext
+    __AXIOM_WATCHLIST_HANDLES__?: Set<string>
+  }
+}
+
+async function fetchWatchlist() {
+  try {
+    const res = await fetch("http://localhost:8080/watchlist");
+    if (res.ok) {
+      const list = await res.json();
+      const handles = new Set<string>();
+      list.forEach((item: any) => {
+        // Strip @ if present
+        handles.add(item.xHandle.replace(/^@/, '').toLowerCase());
+      });
+      window.__AXIOM_WATCHLIST_HANDLES__ = handles;
+    }
+  } catch (err) {
+    console.warn("[Frontdeploy] Failed to fetch watchlist:", err);
   }
 }
 
@@ -157,6 +175,7 @@ function startWhenReady() {
         console.info("[Frontdeploy] Token gate not passed. Radar disabled on X.")
         return
       }
+      await fetchWatchlist()
       mountXLaunchScanner()
     } catch (err) {
       console.warn("[Frontdeploy] Failed to verify token gate:", err)
@@ -182,8 +201,11 @@ function XLaunchPanel({ context }: { context: XReplyContext }) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase text-axiom-muted">Frontdeploy</p>
-          <h2 className="mt-1 text-sm font-bold">
+          <h2 className="mt-1 text-sm font-bold flex items-center gap-2">
             @{context.handle} {context.influence === "major" ? "major account" : "reply signal"}
+            {window.__AXIOM_WATCHLIST_HANDLES__?.has(context.handle.toLowerCase()) && (
+              <span className="px-1.5 py-0.5 text-[10px] bg-axiom-accent text-white rounded uppercase">Tracked</span>
+            )}
           </h2>
         </div>
         <button
@@ -297,8 +319,11 @@ function XLaunchDock() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase text-axiom-muted">Frontdeploy</p>
-          <h2 className="mt-1 text-base font-bold leading-tight">
+          <h2 className="mt-1 text-base font-bold leading-tight flex items-center gap-2">
             {draft.tokenName} <span className="text-axiom-accent">${draft.ticker}</span>
+            {window.__AXIOM_WATCHLIST_HANDLES__?.has(context.handle.toLowerCase()) && (
+              <span className="px-1.5 py-0.5 text-[10px] bg-axiom-accent text-white rounded uppercase shrink-0">Tracked</span>
+            )}
           </h2>
           <p className="mt-1 text-xs text-axiom-muted">
             @{context.handle} - {context.influence === "major" ? "major account" : "reply signal"}
