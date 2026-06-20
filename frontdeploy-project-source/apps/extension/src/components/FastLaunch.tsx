@@ -45,10 +45,16 @@ export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunch
     });
 
     const listener = (changes: any) => {
-      if (changes.pendingFastLaunch?.newValue) {
-        const ticker = changes.pendingFastLaunch.newValue.ticker || "";
-        setDraft(d => ({ ...d, symbol: ticker, name: ticker }));
-        chrome.storage.local.remove(["pendingFastLaunch"]);
+      if (changes["axiomIntelligence.launchContext"]?.newValue) {
+        const ctx = changes["axiomIntelligence.launchContext"].newValue;
+        const generatedDraft = createLaunchDraft(ctx);
+        setDraft(d => ({ 
+          ...d, 
+          name: generatedDraft.tokenName, 
+          symbol: generatedDraft.ticker, 
+          description: generatedDraft.description, 
+          twitter: generatedDraft.sourceUrl 
+        }));
       }
     };
     chrome.storage.local.onChanged.addListener(listener);

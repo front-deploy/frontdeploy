@@ -334,7 +334,17 @@ chrome.notifications.onButtonClicked.addListener((notifId, btnIdx) => {
         const event = (result.kolEvents || []).find((e: any) => e.tweetId === tweetId);
         if (event) {
           const ticker = event.ticker || event.contractAddress || "";
-          chrome.storage.local.set({ pendingFastLaunch: { ticker } });
+          chrome.storage.local.set({ 
+            "axiomIntelligence.launchContext": {
+              id: event.tweetId,
+              text: event.text,
+              url: event.url,
+              handle: event.authorHandle,
+              influence: "major",
+              ticker: ticker
+            },
+            kolDeployTrigger: Date.now()
+          });
           
           // Open side panel
           chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {

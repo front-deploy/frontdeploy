@@ -79,6 +79,9 @@ export function SidePanel() {
     if (typeof chrome === "undefined" || !chrome.storage?.onChanged) return
 
     const handleChange = (changes: any) => {
+      if (changes["kolDeployTrigger"]) {
+        setActiveTab("radar")
+      }
       if (changes["axiomIntelligence.selected"] || changes["axiomIntelligence.launchContext"]) {
         void refreshSelected()
       }

@@ -75,7 +75,21 @@ export function KolLiveFeed() {
                     </span>
                   )}
                   <button
-                    onClick={() => window.open(`https://pump.fun/create`, '_blank')}
+                    onClick={() => {
+                      if (typeof chrome !== "undefined" && chrome.storage) {
+                        chrome.storage.local.set({
+                          "axiomIntelligence.launchContext": {
+                            id: evt.tweetId,
+                            text: evt.text,
+                            url: evt.url,
+                            handle: evt.authorHandle,
+                            influence: "major",
+                            ticker: evt.ticker || evt.contractAddress || ""
+                          },
+                          kolDeployTrigger: Date.now()
+                        });
+                      }
+                    }}
                     className="ml-auto px-3 py-1 bg-axiom-text text-white text-xs font-semibold rounded hover:bg-axiom-text/90 transition-colors"
                   >
                     Deploy
