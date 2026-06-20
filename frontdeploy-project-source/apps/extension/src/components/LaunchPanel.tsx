@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { WalletButton } from "./WalletButton";
 import { FastLaunch } from "./FastLaunch";
-import { getWalletSession } from "../lib/storage";
+import { getWalletStatus } from "../lib/popup-api";
 import { checkTokenGate } from "../lib/tokenGate";
 
 export function LaunchPanel() {
@@ -13,7 +13,7 @@ export function LaunchPanel() {
     
     const verifyGate = async () => {
       setLoading(true);
-      const session = await getWalletSession();
+      const session = await getWalletStatus();
       if (session?.connected && session.publicKey) {
         const result = await checkTokenGate(session.publicKey);
         if (mounted) setGateStatus(result);

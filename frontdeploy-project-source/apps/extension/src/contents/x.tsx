@@ -11,8 +11,9 @@ import {
   type LaunchDraft,
   type XReplyContext
 } from "../lib/xLaunchContext"
-import { getWalletSession, saveSelectedLaunchContext } from "../lib/storage"
+import { saveSelectedLaunchContext } from "../lib/storage"
 import { checkTokenGate } from "../lib/tokenGate"
+import { getWalletStatus } from "../lib/popup-api"
 import { WalletButton } from "../components/XWalletButton"
 import { FastLaunch } from "../components/XFastLaunch"
 
@@ -37,12 +38,12 @@ const RADAR_ROOT_ATTR = "data-axiom-launch-dock"
 
 function mountXLaunchScanner() {
   injectLaunchRadarStyles()
-  mountFloatingDock()
+  // mountFloatingDock()
   wireActiveTweetTracking()
-  scanTweets()
+  // scanTweets()
 
   const observer = new MutationObserver(() => {
-    window.requestIdleCallback?.(() => scanTweets()) ?? window.setTimeout(scanTweets, 120)
+    // window.requestIdleCallback?.(() => scanTweets()) ?? window.setTimeout(scanTweets, 120)
   })
 
   observer.observe(document.body, {
@@ -150,7 +151,7 @@ function startWhenReady() {
     }
 
     try {
-      const session = await getWalletSession()
+      const session = await getWalletStatus()
       const gate = await checkTokenGate(session?.publicKey)
       if (!gate.isAllowed) {
         console.info("[Frontdeploy] Token gate not passed. Radar disabled on X.")

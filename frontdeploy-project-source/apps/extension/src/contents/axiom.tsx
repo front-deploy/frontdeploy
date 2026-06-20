@@ -21,7 +21,8 @@ import {
 import { getAddressIntelligence } from "../lib/liveIntelligence"
 import { getMockIntelligence } from "../lib/mockIntelligence"
 import type { AddressIntelligence } from "../lib/mockIntelligence"
-import { getLabel, getSettings, saveSelectedAddress, getWalletSession } from "../lib/storage"
+import { getLabel, getSettings, saveSelectedAddress } from "../lib/storage"
+import { getWalletStatus } from "../lib/popup-api"
 import { checkTokenGate } from "../lib/tokenGate"
 import type { OverlaySettings } from "../lib/storage"
 import { hasExtensionContext, isContextInvalidated } from "../lib/extensionContext"
@@ -47,7 +48,7 @@ let currentSettings: OverlaySettings = {
 
 async function mountOverlay() {
   try {
-    const session = await getWalletSession()
+    const session = await getWalletStatus()
     const gate = await checkTokenGate(session?.publicKey)
     if (!gate.isAllowed) {
       console.info("[Frontdeploy] Token gate not passed. Overlay disabled on Axiom.")

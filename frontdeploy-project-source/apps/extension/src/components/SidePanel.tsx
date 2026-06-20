@@ -11,7 +11,7 @@ import {
   saveLabel,
   saveSelectedAddress
 } from "../lib/storage"
-import { getWalletSession } from "../lib/storage"
+import { getWalletStatus } from "../lib/popup-api"
 import {
   buildChatGptLogoUrl,
   buildPumpFunCreateUrl,
@@ -42,7 +42,7 @@ export function SidePanel() {
     
     const verifyGate = async () => {
       setLoadingGate(true);
-      const session = await getWalletSession();
+      const session = await getWalletStatus();
       if (session?.connected && session.publicKey) {
         const { checkTokenGate } = await import("../lib/tokenGate");
         const result = await checkTokenGate(session.publicKey);
