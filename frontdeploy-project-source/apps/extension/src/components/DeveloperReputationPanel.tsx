@@ -36,24 +36,17 @@ export function DeveloperReputationPanel({
   }, [contextKey, context])
 
   useEffect(() => {
-    if (!context) return
-    const hasEvidence =
-      Boolean(context.websiteUrl) ||
-      Boolean(context.githubRepoUrl) ||
-      Boolean(context.xPostUrl) ||
-      context.marketCapUsd !== undefined
-
-    if (hasEvidence) {
-      void runAudit({
-        websiteUrl: context.websiteUrl ?? "",
-        githubRepoUrl: context.githubRepoUrl ?? "",
-        xPostUrl: context.xPostUrl ?? "",
-        marketCap:
-          context.marketCapUsd !== undefined ? String(Math.round(context.marketCapUsd)) : "",
-        narrative: context.narrative ?? ""
-      })
+    const payload = {
+      websiteUrl: context?.websiteUrl ?? "",
+      githubRepoUrl: context?.githubRepoUrl ?? "",
+      xPostUrl: context?.xPostUrl ?? "",
+      marketCap: context?.marketCapUsd !== undefined ? String(Math.round(context.marketCapUsd)) : "",
+      narrative: context?.narrative ?? ""
     }
-  }, [contextKey])
+    
+    // Always run audit automatically on mount or when context changes
+    void runAudit(payload)
+  }, [contextKey, tokenAddress])
 
   async function runAudit(overrides?: {
     websiteUrl: string

@@ -23,8 +23,11 @@ import { DeveloperReputationPanel } from "./DeveloperReputationPanel"
 import { LaunchPanel } from "./LaunchPanel"
 import { KolLiveFeed } from "./KolLiveFeed"
 
+import { AxiomProPanel } from "./AxiomProPanel"
+import { getSettings, saveSettings, type OverlaySettings } from "../lib/storage"
+
 export function SidePanel() {
-  const [activeTab, setActiveTab] = useState<"radar" | "kol">("kol")
+  const [activeTab, setActiveTab] = useState<"radar" | "kol" | "axiom">("kol")
   const [selected, setSelected] = useState<SelectedAddress | null>(null)
   const [launchContext, setLaunchContext] = useState<XReplyContext | null>(null)
   const [copied, setCopied] = useState("")
@@ -195,9 +198,43 @@ export function SidePanel() {
           >
             KOL Live
           </button>
+          <button 
+            onClick={() => setActiveTab("axiom")}
+            className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'axiom' ? 'text-axiom-text border-axiom-text' : 'text-axiom-muted border-transparent hover:text-axiom-text/80'}`}
+          >
+            Axiom Pro
+          </button>
         </div>
 
-        {activeTab === "kol" ? (
+        {activeTab === "axiom" ? (
+          <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden p-4">
+            {!selected || selected.type !== "token" ? (
+              <div className="p-6 text-center mt-8">
+                <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">
+                  <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <h2 className="text-lg font-bold text-axiom-text">Inspect a Token</h2>
+                <p className="mt-2 text-sm text-axiom-muted">
+                  Use the manual inspector below or select a token to view Axiom Pro Intel.
+                </p>
+                <div className="mt-6 text-left">
+                  <ManualInspector
+                    address={manualAddress}
+                    error={manualError}
+                    type={manualType}
+                    onAddressChange={setManualAddress}
+                    onTypeChange={setManualType}
+                    onInspect={() => void handleInspectManualAddress()}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">                
+                <AxiomProPanel mintAddress={selected.address} />
+              </div>
+            )}
+          </div>
+        ) : activeTab === "kol" ? (
           <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden">
             {!gateStatus?.isAllowed ? (
               <div className="p-6 text-center mt-8">
@@ -261,9 +298,43 @@ export function SidePanel() {
         >
           KOL Live
         </button>
+        <button 
+          onClick={() => setActiveTab("axiom")}
+          className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'axiom' ? 'text-axiom-text border-axiom-text' : 'text-axiom-muted border-transparent hover:text-axiom-text/80'}`}
+        >
+          Axiom Pro
+        </button>
       </div>
 
-      {activeTab === "kol" ? (
+      {activeTab === "axiom" ? (
+        <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden p-4">
+          {!selected || selected.type !== "token" ? (
+            <div className="p-6 text-center mt-8">
+              <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">
+                <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <h2 className="text-lg font-bold text-axiom-text">Inspect a Token</h2>
+              <p className="mt-2 text-sm text-axiom-muted">
+                Use the manual inspector below or select a token to view Axiom Pro Intel.
+              </p>
+              <div className="mt-6 text-left">
+                <ManualInspector
+                  address={manualAddress}
+                  error={manualError}
+                  type={manualType}
+                  onAddressChange={setManualAddress}
+                  onTypeChange={setManualType}
+                  onInspect={() => void handleInspectManualAddress()}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">                
+              <AxiomProPanel mintAddress={selected.address} context={selected.context} />
+            </div>
+          )}
+        </div>
+      ) : activeTab === "kol" ? (
         <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden">
           {!gateStatus?.isAllowed ? (
             <div className="p-6 text-center mt-8">

@@ -1,6 +1,7 @@
 import type { FrontendToBackgroundMessage, BackgroundToRelayMessage, RelayToBackgroundMessage, FastLaunchDraft, FrontendWalletStatusResponse, FrontendWalletConnectResponse, FrontendFastLaunchResponse } from "./lib/messaging";
 import { uploadMetadata, buildPartialSignedCreateTx } from "./lib/pumpfun";
 import { saveWalletSession, getLaunchSettings } from "./lib/storage";
+import iconUrl from "url:~assets/icon.png";
 
 chrome.runtime.onInstalled.addListener(() => {
   void chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
@@ -312,7 +313,7 @@ function handleKolEvent(event: any) {
     const notifId = `kol-${event.tweetId}`;
     chrome.notifications.create(notifId, {
       type: "basic",
-      iconUrl: chrome.runtime.getURL("icon.png") || "icon.png", // fallback
+      iconUrl: chrome.runtime.getURL(iconUrl) || iconUrl, // fallback
       title: `🚨 Signal from @${event.authorHandle}`,
       message: `${event.ticker || event.contractAddress} detected!\n${event.text}`,
       buttons: [

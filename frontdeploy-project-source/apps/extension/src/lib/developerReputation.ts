@@ -45,8 +45,10 @@ export const auditDeveloperReputation = async (
     return null
   }
 
+  const backendUrl = (process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL || "https://frontdeploy-production.up.railway.app").replace(/\/+$/, "")
+
   const response = await fetchWithTimeout(
-    new URL("/v1/reputation/developer", normalizeBackendUrl(settings.backendUrl)),
+    `${backendUrl}/v1/reputation/developer`,
     {
       method: "POST",
       headers: {
