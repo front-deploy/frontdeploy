@@ -2,7 +2,8 @@ import fastify from 'fastify';
 import websocketPlugin from '@fastify/websocket';
 import cors from '@fastify/cors';
 import { WebSocketService } from './services/websocketService.js';
-import { TwitterStreamService } from './services/twitterStreamService.js';
+import { IngestionPipeline } from './services/ingestionPipeline.js';
+import { TwitterApiIoSource } from './services/twitterApiIoSource.js';
 import { MockSimulatorService } from './services/mockSimulator.js';
 import { PrismaClient } from '@prisma/client';
 
@@ -22,12 +23,15 @@ app.register(async (instance) => {
   wsService.registerRoutes();
 
   // Start services
-  if (process.env.USE_MOCK_STREAM === 'true' || !process.env.TWITTER_BEARER_TOKEN) {
+  if (process.env.USE_MOCK_STREAM === 'true' || !process.env.TWITTER_PROVIDER_KEY) {
     const mockSimulator = new MockSimulatorService(wsService, app.log);
     mockSimulator.start(15000); // Send mock tweet every 15 seconds
   } else {
-    const twitterService = new TwitterStreamService(wsService, app.log);
-    await twitterService.connect();
+    const source = new TwitterApiIoSource(app.log);
+    // Poll every 10 seconds by default, configurable via env
+    const pollIntervalMs = process.env.POLL_INTERVAL_SEC ? parseInt(process.env.POLL_INTERVAL_SEC) * 1000 : 10000;
+    const pipeline = new IngestionPipeline(source, wsService, app.log, pollIntervalMs);
+    await pipeline.start();
   }
 });
 
