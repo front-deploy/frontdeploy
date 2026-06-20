@@ -105,10 +105,14 @@ function scanTimelineNames() {
 }
 
 let currentProfileUrl = "";
+let isFetchingSmartFollowers = false;
+
 async function scanSmartFollowers() {
   if (window.location.href === currentProfileUrl && document.querySelector('.axiom-smart-followers-overlay')) {
     return;
   }
+  
+  if (isFetchingSmartFollowers) return;
   
   const match = window.location.pathname.match(/^\/([a-zA-Z0-9_]+)$/);
   const ignoreList = ["home", "explore", "notifications", "messages", "bookmarks", "settings", "search"];
@@ -119,15 +123,19 @@ async function scanSmartFollowers() {
   if (!header) return;
 
   currentProfileUrl = window.location.href;
-  document.querySelector('.axiom-smart-followers-overlay')?.remove();
+  isFetchingSmartFollowers = true;
 
   try {
+    document.querySelector('.axiom-smart-followers-overlay')?.remove();
     const apiUrl = process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL || "http://localhost:8080";
     const res = await fetch(`${apiUrl}/smart-followers?handle=${handle}`);
     if (res.ok) {
       const followers = await res.json();
       if (followers && followers.length > 0) {
         if (window.location.href !== currentProfileUrl) return;
+        
+        // Final check before injecting to avoid race conditions
+        if (document.querySelector('.axiom-smart-followers-overlay')) return;
 
         const overlay = document.createElement("div");
         overlay.className = "axiom-smart-followers-overlay";
@@ -154,6 +162,8 @@ async function scanSmartFollowers() {
     }
   } catch (err) {
     console.warn("Failed to fetch smart followers", err);
+  } finally {
+    isFetchingSmartFollowers = false;
   }
 }
 
