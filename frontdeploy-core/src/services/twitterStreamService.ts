@@ -3,6 +3,9 @@ import type { TweetV2SingleStreamResult } from 'twitter-api-v2';
 import type { FastifyBaseLogger } from 'fastify';
 import { WebSocketService } from './websocketService.js';
 import type { KolEventPayload } from './websocketService.js';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export class TwitterStreamService {
   private client: TwitterApi;
@@ -27,6 +30,39 @@ export class TwitterStreamService {
     }
 
     try {
+      this.logger.info('Syncing Twitter Filtered Stream rules from Watchlist...');
+      const watchlist = await prisma.watchlist.findMany({ where: { enabled: true } });
+      
+      if (watchlist.length === 0) {
+        this.logger.warn('Watchlist is empty. Listening to stream anyway, but no events will trigger.');
+      } else {
+        const currentRules = await this.client.v2.streamRules();
+        if (currentRules.data?.length) {
+          await this.client.v2.updateStreamRules({
+            delete: { ids: currentRules.data.map(rule => rule.id) }
+          });
+        }
+        
+        // Chunk handles into rules (Twitter allows up to 512 chars per rule)
+        // Format: "from:handle1 OR from:handle2"
+        let currentRule = '';
+        const newRules = [];
+        for (const item of watchlist) {
+          const handle = item.handle.replace('@', '');
+          const addition = `from:${handle}`;
+          if (currentRule.length + addition.length + 4 > 500) {
+            newRules.push({ value: currentRule });
+            currentRule = addition;
+          } else {
+            currentRule = currentRule ? `${currentRule} OR ${addition}` : addition;
+          }
+        }
+        if (currentRule) newRules.push({ value: currentRule });
+        
+        await this.client.v2.updateStreamRules({ add: newRules });
+        this.logger.info(`Added ${newRules.length} rules to Twitter stream covering ${watchlist.length} accounts.`);
+      }
+
       this.logger.info('Connecting to Twitter v2 Filtered Stream...');
       
       const stream = await this.client.v2.searchStream({
