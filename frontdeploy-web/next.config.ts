@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  outputFileTracingIncludes: {
+    '/api/verify-gate': ['./private/**/*'],
+  },
 };
 
 export default nextConfig;
