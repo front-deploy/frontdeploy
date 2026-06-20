@@ -353,3 +353,16 @@ chrome.notifications.onButtonClicked.addListener((notifId, btnIdx) => {
 
 // Initial connection
 ensureWebSocket();
+
+// MV3 Keepalive mechanism
+const ALARM_NAME = "WS_KEEPALIVE_ALARM";
+
+// Create an alarm that fires every 0.4 minutes (~24 seconds)
+chrome.alarms.create(ALARM_NAME, { periodInMinutes: 0.4 });
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === ALARM_NAME) {
+    // This wakes up the service worker and ensures WS is connected
+    ensureWebSocket();
+  }
+});

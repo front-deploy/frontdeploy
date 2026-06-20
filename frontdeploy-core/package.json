@@ -8,7 +8,8 @@
     "dev": "tsx watch src/app.ts",
     "build": "tsc",
     "start": "node dist/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sync:smart-followers": "tsx src/scripts/syncSmartFollowers.ts"
   },
   "keywords": [],
   "author": "",
