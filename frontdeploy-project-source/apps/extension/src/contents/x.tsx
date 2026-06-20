@@ -11,7 +11,8 @@ import {
   type LaunchDraft,
   type XReplyContext
 } from "../lib/xLaunchContext"
-import { saveSelectedLaunchContext } from "../lib/storage"
+import { getWalletSession, saveSelectedLaunchContext } from "../lib/storage"
+import { checkTokenGate } from "../lib/tokenGate"
 import { WalletButton } from "../components/XWalletButton"
 import { FastLaunch } from "../components/XFastLaunch"
 
@@ -142,13 +143,23 @@ function startWhenReady() {
   if (window.__AXIOM_LAUNCH_RADAR_BOOTED__) return
   window.__AXIOM_LAUNCH_RADAR_BOOTED__ = true
 
-  const start = () => {
+  const start = async () => {
     if (!document.body) {
       window.setTimeout(start, 100)
       return
     }
 
-    mountXLaunchScanner()
+    try {
+      const session = await getWalletSession()
+      const gate = await checkTokenGate(session?.publicKey)
+      if (!gate.isAllowed) {
+        console.info("[Frontdeploy] Token gate not passed. Radar disabled on X.")
+        return
+      }
+      mountXLaunchScanner()
+    } catch (err) {
+      console.warn("[Frontdeploy] Failed to verify token gate:", err)
+    }
   }
 
   start()
