@@ -97,8 +97,8 @@ async function main() {
             }
         }
         console.log(`[Success] Inserted/Updated ${mappedCount} mappings for @${account.handle}.`);
-        // Sleep for 2 seconds to avoid aggressive rate-limiting
-        await new Promise(r => setTimeout(r, 2000));
+        // Sleep for 10 seconds to avoid aggressive rate-limiting (429 errors)
+        await new Promise(r => setTimeout(r, 10000));
     }
     console.log('=============================================');
     console.log(' Smart Followers Sync Completed Successfully!');
