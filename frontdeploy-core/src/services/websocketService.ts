@@ -36,20 +36,8 @@ export class WebSocketService {
             this.tokenSubscriptions.get(payload.mint)!.add(connection);
             this.app.log.info(`Client subscribed to mint: ${payload.mint}`);
             
-            // Simulate initial smart money feed for testing
-            setTimeout(() => {
-              if (connection.readyState === 1) {
-                connection.send(JSON.stringify({
-                  type: 'smart_money',
-                  data: {
-                    mint: payload.mint,
-                    action: 'BUY',
-                    amount: '150.5 SOL',
-                    walletLabel: 'Whale'
-                  }
-                }));
-              }
-            }, 2000);
+            // Real Smart Money feed should be broadcasted from a proper indexer service
+            // The simulation block has been removed as per user request to avoid dummy data.
           } else if (payload.action === 'unsubscribe' && payload.mint) {
             if (this.tokenSubscriptions.has(payload.mint)) {
               this.tokenSubscriptions.get(payload.mint)!.delete(connection);
