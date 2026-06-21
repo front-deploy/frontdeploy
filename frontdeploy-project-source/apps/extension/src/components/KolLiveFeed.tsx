@@ -4,24 +4,67 @@ export function KolLiveFeed() {
   const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
-    // Initial load
-    if (typeof chrome !== "undefined" && chrome.storage) {
-      chrome.storage.local.get(["kolEvents"], (result) => {
-        setEvents(result.kolEvents || []);
-      });
+    let ws: WebSocket | null = null;
+    let keepAliveIntervalId: ReturnType<typeof setInterval> | null = null;
+    let isMounted = true;
+    
+    const WS_URL = process.env.PLASMO_PUBLIC_FRONTDEPLOY_WS_URL || "ws://localhost:8080/ws/kol-alerts";
 
-      // Listener for updates
-      const listener = (changes: any) => {
-        if (changes.kolEvents) {
-          setEvents(changes.kolEvents.newValue || []);
+    function connect() {
+      if (!isMounted) return;
+      ws = new WebSocket(WS_URL);
+
+      ws.onopen = () => {
+        console.log("KOL Alerts WS connected from UI");
+        if (keepAliveIntervalId) clearInterval(keepAliveIntervalId);
+        keepAliveIntervalId = setInterval(() => {
+          if (ws?.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "ping" }));
+          }
+        }, 20000);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "kol_event") {
+            setEvents(prev => {
+              if (prev.some(e => e.tweetId === data.data.tweetId)) return prev;
+              const newEvents = [data.data, ...prev];
+              if (newEvents.length > 100) newEvents.length = 100;
+              return newEvents;
+            });
+          }
+        } catch (err) {
+          console.error("Error parsing WS message", err);
         }
       };
-      chrome.storage.onChanged.addListener(listener);
 
-      return () => {
-        chrome.storage.onChanged.removeListener(listener);
+      ws.onclose = () => {
+        console.log("KOL Alerts WS closed");
+        ws = null;
+        if (keepAliveIntervalId) clearInterval(keepAliveIntervalId);
+        if (isMounted) {
+          setTimeout(connect, 5000);
+        }
+      };
+
+      ws.onerror = (err) => {
+        console.error("KOL Alerts WS error", err);
+        ws?.close();
       };
     }
+
+    connect();
+
+    return () => {
+      isMounted = false;
+      if (keepAliveIntervalId) clearInterval(keepAliveIntervalId);
+      if (ws) {
+        // Disconnect immediately when the tab is closed!
+        ws.close();
+      }
+    };
   }, []);
   
   return (
@@ -58,44 +101,42 @@ export function KolLiveFeed() {
                   {new Date(evt.postedAt).toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-xs text-axiom-text whitespace-pre-wrap mb-2 line-clamp-3">
+              <p className="text-xs text-axiom-text whitespace-pre-wrap mb-2">
                 {evt.text}
               </p>
               
-              {evt.isSignal && (
-                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-axiom-border/10">
-                  {evt.ticker && (
-                    <span className="px-1.5 py-0.5 rounded bg-axiom-warn/20 text-axiom-warn text-[10px] font-bold">
-                      {evt.ticker}
-                    </span>
-                  )}
-                  {evt.contractAddress && (
-                    <span className="text-[10px] text-axiom-muted font-mono truncate max-w-[120px]">
-                      {evt.contractAddress}
-                    </span>
-                  )}
-                  <button
-                    onClick={() => {
-                      if (typeof chrome !== "undefined" && chrome.storage) {
-                        chrome.storage.local.set({
-                          "axiomIntelligence.launchContext": {
-                            id: evt.tweetId,
-                            text: evt.text,
-                            url: evt.url,
-                            handle: evt.authorHandle,
-                            influence: "major",
-                            ticker: evt.ticker || evt.contractAddress || ""
-                          },
-                          kolDeployTrigger: Date.now()
-                        });
-                      }
-                    }}
-                    className="ml-auto px-3 py-1 bg-black text-white border border-axiom-border text-xs font-semibold rounded hover:bg-black/80 transition-colors"
-                  >
-                    Deploy
-                  </button>
-                </div>
-              )}
+              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-axiom-border/10">
+                {evt.ticker && (
+                  <span className="px-1.5 py-0.5 rounded bg-axiom-warn/20 text-axiom-warn text-[10px] font-bold">
+                    {evt.ticker}
+                  </span>
+                )}
+                {evt.contractAddress && (
+                  <span className="text-[10px] text-axiom-muted font-mono truncate max-w-[120px]">
+                    {evt.contractAddress}
+                  </span>
+                )}
+                <button
+                  onClick={() => {
+                    if (typeof chrome !== "undefined" && chrome.storage) {
+                      chrome.storage.local.set({
+                        "axiomIntelligence.launchContext": {
+                          id: evt.tweetId,
+                          text: evt.text,
+                          url: evt.url,
+                          handle: evt.authorHandle,
+                          influence: "major",
+                          ticker: evt.ticker || evt.contractAddress || ""
+                        },
+                        kolDeployTrigger: Date.now()
+                      });
+                    }
+                  }}
+                  className="ml-auto px-3 py-1 bg-black text-white border border-axiom-border text-xs font-semibold rounded hover:bg-black/80 transition-colors"
+                >
+                  Deploy
+                </button>
+              </div>
             </div>
           ))
         ) : (

@@ -54,6 +54,10 @@ export class IngestionPipeline {
       const accounts = watchlist.map((item: { handle: string }) => item.handle);
 
       // 2. Poll Source
+      if (this.wsService.getConnectionsCount() === 0) {
+        return; // Skip polling if no one is viewing the KOL Live feed
+      }
+
       const newTweets = await this.source.pollSince(accounts, this.globalSinceId);
 
       if (newTweets.length > 0) {

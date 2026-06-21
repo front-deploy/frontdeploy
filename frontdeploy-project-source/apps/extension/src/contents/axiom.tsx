@@ -104,15 +104,6 @@ export default function AxiomCSUI() {
     return () => clearInterval(interval)
   }, [activeToken])
 
-  if (!activeToken) {
-    return <div style={{ display: 'none' }} data-axiom-csui="active" />
-  }
-
-  return (
-    <>
-      <div style={{ display: 'none' }} data-axiom-csui="active" />
-      <ChartOverlay tokenAddress={activeToken} tier={tier} />
-    </>
-  )
+  return <div style={{ display: 'none' }} data-axiom-csui="active" data-active-token={activeToken || ""} />
 }
 

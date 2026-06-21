@@ -21,6 +21,10 @@ export class WebSocketService {
 
   constructor(private app: FastifyInstance) {}
 
+  public getConnectionsCount(): number {
+    return this.connections.size;
+  }
+
   public registerRoutes() {
     this.app.get('/ws/kol-alerts', { websocket: true }, async (connection: WebSocket, req: FastifyRequest) => {
       this.app.log.info('New client connected to KOL alerts stream');
