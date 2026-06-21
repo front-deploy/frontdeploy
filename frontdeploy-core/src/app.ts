@@ -203,14 +203,26 @@ app.get<{ Params: { mint: string } }>('/v1/risk/token/:mint', async (request, re
     const mintPubkey = new PublicKey(mint);
 
     // 1. Fetch mint authority / freeze authority
-    const mintInfo = await getMint(connection, mintPubkey);
-    const isMintRevoked = mintInfo.mintAuthority === null;
-    const isFreezeRevoked = mintInfo.freezeAuthority === null;
+    let isMintRevoked = false;
+    let isFreezeRevoked = false;
+    let mintFetchFailed = false;
+    let totalSupply = 0n;
+
+    try {
+      const mintInfo = await getMint(connection, mintPubkey);
+      isMintRevoked = mintInfo.mintAuthority === null;
+      isFreezeRevoked = mintInfo.freezeAuthority === null;
+      totalSupply = mintInfo.supply;
+    } catch (err) {
+      mintFetchFailed = true;
+      app.log.warn(`Failed to fetch mint info for ${mint}`);
+    }
 
     // 2. Fetch top 10 token holders
     let top10Concentration = 0;
     let top10FetchFailed = false;
     try {
+      if (mintFetchFailed) throw new Error("Skipping top 10 fetch since mint fetch failed");
       const largestAccounts = await connection.getTokenLargestAccounts(mintPubkey);
       let top10Sum = 0n;
       for (const account of largestAccounts.value.slice(0, 10)) {
@@ -218,7 +230,6 @@ app.get<{ Params: { mint: string } }>('/v1/risk/token/:mint', async (request, re
           top10Sum += BigInt(account.amount);
         }
       }
-      const totalSupply = mintInfo.supply;
       top10Concentration = totalSupply > 0n 
         ? Number((top10Sum * 100n) / totalSupply)
         : 100;
@@ -242,8 +253,12 @@ app.get<{ Params: { mint: string } }>('/v1/risk/token/:mint', async (request, re
     let score = 100;
     const warnings = [];
     
-    if (!isMintRevoked) { score -= 30; warnings.push("Mint authority NOT revoked."); }
-    if (!isFreezeRevoked) { score -= 30; warnings.push("Freeze authority NOT revoked."); }
+    if (mintFetchFailed) {
+      warnings.push("Could not verify Mint/Freeze authorities (RPC overloaded or invalid token).");
+    } else {
+      if (!isMintRevoked) { score -= 30; warnings.push("Mint authority NOT revoked."); }
+      if (!isFreezeRevoked) { score -= 30; warnings.push("Freeze authority NOT revoked."); }
+    }
     
     if (top10FetchFailed) {
       score -= 10;
