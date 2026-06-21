@@ -327,7 +327,7 @@ function handleKolEvent(event: any) {
               requireInteraction: true
             });
           }
-          resolve();
+          resolve(); 
         });
       } else {
         resolve();
