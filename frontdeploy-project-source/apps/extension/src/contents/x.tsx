@@ -291,10 +291,11 @@ function startWhenReady() {
       // KOL Live features (like the in-feed tracked badge) are PRO features.
       const session = await getWalletStatus()
       const gate = await checkTokenGate(session?.publicKey)
-      if (gate.isAllowed) {
+      const { hasAccess } = await import("../lib/holderTier")
+      if (hasAccess(gate.tier, "kolAlerts")) {
         await fetchWatchlist()
       } else {
-        console.info("[Frontdeploy] Token gate not passed. KOL tracking badges disabled on X.")
+        console.info("[Frontdeploy] Token gate not passed for KOL alerts. KOL tracking badges disabled on X.")
       }
     } catch (err) {
       console.warn("[Frontdeploy] Error during X initialization:", err)
@@ -316,7 +317,7 @@ function XLaunchPanel({ context }: { context: XReplyContext }) {
   }
 
   return (
-    <aside className="mx-4 mb-3 mt-2 rounded-sm border border-axiom-border bg-white p-3 text-axiom-text shadow-none">
+    <aside className="mx-4 mb-3 mt-2 rounded-sm border border-axiom-border bg-axiom-panel p-3 text-axiom-text shadow-none">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase text-axiom-muted">Frontdeploy</p>
@@ -415,7 +416,7 @@ function XLaunchDock() {
 
   if (!context || !draft) {
     return (
-      <div className="fixed bottom-4 right-4 z-[2147483647] w-80 rounded-sm border border-axiom-border bg-white p-3 text-axiom-text shadow-none">
+      <div className="fixed bottom-4 right-4 z-[2147483647] w-80 rounded-sm border border-axiom-border bg-axiom-panel p-3 text-axiom-text shadow-none">
         <p className="text-xs font-bold uppercase text-axiom-muted">Frontdeploy</p>
         <p className="mt-1 text-sm font-semibold">Hover an X reply to draft a pump.fun launch.</p>
       </div>
@@ -434,7 +435,7 @@ function XLaunchDock() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-[2147483647] w-[360px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-sm border border-axiom-border bg-white p-3 text-axiom-text shadow-none flex flex-col">
+    <div className="fixed bottom-4 right-4 z-[2147483647] w-[360px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] overflow-y-auto rounded-sm border border-axiom-border bg-axiom-panel p-3 text-axiom-text shadow-none flex flex-col">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase text-axiom-muted">Frontdeploy</p>
@@ -592,21 +593,21 @@ const LAUNCH_RADAR_CSS = `
 [data-axiom-launch-dock] .border,
 .axiom-x-launch-mount .border { border-width: 1px; border-style: solid; }
 [data-axiom-launch-dock] .border-axiom-border,
-.axiom-x-launch-mount .border-axiom-border { border-color: #111111; }
-[data-axiom-launch-dock] .bg-white,
-.axiom-x-launch-mount .bg-white { background: #ffffff; }
+.axiom-x-launch-mount .border-axiom-border { border-color: #27272a; }
+[data-axiom-launch-dock] .bg-axiom-panel,
+.axiom-x-launch-mount .bg-axiom-panel { background: #121214; }
 [data-axiom-launch-dock] .bg-axiom-bg,
-.axiom-x-launch-mount .bg-axiom-bg { background: #f7f7f2; }
+.axiom-x-launch-mount .bg-axiom-bg { background: #0a0a0b; }
 [data-axiom-launch-dock] .bg-axiom-accent,
-.axiom-x-launch-mount .bg-axiom-accent { background: #111111; }
+.axiom-x-launch-mount .bg-axiom-accent { background: #3b82f6; }
 [data-axiom-launch-dock] .text-white,
 .axiom-x-launch-mount .text-white { color: #ffffff; }
 [data-axiom-launch-dock] .text-axiom-text,
-.axiom-x-launch-mount .text-axiom-text { color: #111111; }
+.axiom-x-launch-mount .text-axiom-text { color: #fafafa; }
 [data-axiom-launch-dock] .text-axiom-muted,
-.axiom-x-launch-mount .text-axiom-muted { color: #6b6b66; }
+.axiom-x-launch-mount .text-axiom-muted { color: #a1a1aa; }
 [data-axiom-launch-dock] .text-axiom-accent,
-.axiom-x-launch-mount .text-axiom-accent { color: #111111; }
+.axiom-x-launch-mount .text-axiom-accent { color: #3b82f6; }
 [data-axiom-launch-dock] .text-axiom-good,
 .axiom-x-launch-mount .text-axiom-good { color: #008f5a; }
 [data-axiom-launch-dock] .p-2,

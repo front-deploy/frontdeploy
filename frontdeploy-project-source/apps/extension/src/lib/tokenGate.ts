@@ -1,12 +1,12 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 import { getLaunchSettings } from "./storage";
+import { resolveTier, type Tier } from "./holderTier";
 
 const FDP_MINT = process.env.PLASMO_PUBLIC_FRONTDEPLOY_CA || "2vCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump";
-const MIN_BALANCE = process.env.PLASMO_PUBLIC_MIN_TOKEN_BALANCE ? parseInt(process.env.PLASMO_PUBLIC_MIN_TOKEN_BALANCE, 10) : 1_000_000;
 
-export async function checkTokenGate(publicKeyBase58: string | undefined): Promise<{ isAllowed: boolean; balance: number; error?: string }> {
+export async function checkTokenGate(publicKeyBase58: string | undefined): Promise<{ tier: Tier; balance: number; error?: string }> {
   if (!publicKeyBase58) {
-    return { isAllowed: false, balance: 0, error: "Please connect your wallet first." };
+    return { tier: "none", balance: 0, error: "Please connect your wallet first." };
   }
 
   try {
@@ -17,7 +17,7 @@ export async function checkTokenGate(publicKeyBase58: string | undefined): Promi
     const rpcUrls = [primaryRpcUrl, heliusFallback].filter(Boolean) as string[];
 
     if (rpcUrls.length === 0) {
-      return { isAllowed: false, balance: 0, error: "RPC URL not configured" };
+      return { tier: "none", balance: 0, error: "RPC URL not configured" };
     }
 
     let tokenAccounts = null;
@@ -51,24 +51,19 @@ export async function checkTokenGate(publicKeyBase58: string | undefined): Promi
       totalBalance += uiAmount;
     }
 
-    if (totalBalance < MIN_BALANCE) {
-      console.info(`[TokenGate Debug] Access denied: User ${publicKeyBase58} has ${totalBalance} $FDP.`);
-      return {
-        isAllowed: false,
-        balance: totalBalance,
-        error: `You need to hold at least 1% of the supply (${MIN_BALANCE.toLocaleString()} $FDP) to unlock. Your balance is ${totalBalance.toLocaleString()} $FDP.`
-      };
-    } else {
-      console.info(`[TokenGate Debug] Access granted: User ${publicKeyBase58} has ${totalBalance} $FDP.`);
-      return {
-        isAllowed: true,
-        balance: totalBalance
-      };
-    }
+    const tier = resolveTier(totalBalance);
+    
+    console.info(`[TokenGate Debug] Access checked: User ${publicKeyBase58} has ${totalBalance} $FDP (Tier: ${tier}).`);
+
+    return {
+      tier,
+      balance: totalBalance,
+      ...(tier === "none" ? { error: `You need to hold $FDP to unlock features. Your balance is ${totalBalance.toLocaleString()} $FDP.` } : {})
+    };
   } catch (error: unknown) {
     console.error("[TokenGate Debug] Verification process failed:", error);
     return { 
-      isAllowed: false, 
+      tier: "none", 
       balance: 0, 
       error: error instanceof Error ? error.message : "An unexpected error occurred while verifying your wallet." 
     };

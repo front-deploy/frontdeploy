@@ -105,7 +105,7 @@ export function AxiomProPanel({ mintAddress, context }: { mintAddress: string, c
       <DeveloperReputationPanel tokenAddress={mintAddress} context={context} />
       
       {/* Rug Scan Component */}
-      <div className="rounded-sm border border-axiom-border bg-white p-4">
+      <div className="rounded-sm border border-axiom-border bg-axiom-panel p-4">
         <p className="text-xs font-bold uppercase text-axiom-muted mb-3">Rug Scan</p>
         {intel ? (
           <TokenRiskPanel intelligence={intel} />
@@ -115,7 +115,7 @@ export function AxiomProPanel({ mintAddress, context }: { mintAddress: string, c
       </div>
       
       {/* Realtime Smart-Money */}
-      <div className="rounded-sm border border-axiom-border bg-white p-4">
+      <div className="rounded-sm border border-axiom-border bg-axiom-panel p-4">
         <p className="text-xs font-bold uppercase text-axiom-muted flex items-center justify-between mb-3">
           <span className="flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-axiom-good animate-pulse' : 'bg-axiom-bad'}`}></span>

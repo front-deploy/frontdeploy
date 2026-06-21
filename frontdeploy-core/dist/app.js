@@ -321,6 +321,53 @@ app.get('/v1/risk/token/:mint', async (request, reply) => {
         return reply.status(500).send({ error: 'Failed to analyze token risk' });
     }
 });
+app.post('/v1/enroll-founding', async (request, reply) => {
+    try {
+        const body = request.body;
+        if (!body || !body.walletAddress) {
+            return reply.status(400).send({ error: 'walletAddress is required' });
+        }
+        const { walletAddress } = body;
+        // Check balance on-chain
+        const FDP_MINT = "2vCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump";
+        const rpcUrl = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
+        const connection = new Connection(rpcUrl, "confirmed");
+        const pubKey = new PublicKey(walletAddress);
+        const mintKey = new PublicKey(FDP_MINT);
+        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(pubKey, {
+            mint: mintKey,
+        });
+        let totalBalance = 0;
+        for (const account of tokenAccounts.value) {
+            const parsedInfo = account.account.data.parsed.info;
+            const uiAmount = parsedInfo.tokenAmount.uiAmount || 0;
+            totalBalance += uiAmount;
+        }
+        const FOUNDING_THRESHOLD = 10_000_000;
+        if (totalBalance >= FOUNDING_THRESHOLD) {
+            const user = await prisma.user.upsert({
+                where: { walletAddress },
+                update: {
+                    isFoundingMember: true,
+                    enrolledAt: new Date()
+                },
+                create: {
+                    walletAddress,
+                    isFoundingMember: true,
+                    enrolledAt: new Date()
+                }
+            });
+            return { success: true, message: 'Successfully enrolled as Founding Member', balance: totalBalance, user };
+        }
+        else {
+            return reply.status(400).send({ error: 'Insufficient balance to enroll as Founding Member', balance: totalBalance });
+        }
+    }
+    catch (error) {
+        app.log.error(error);
+        return reply.status(500).send({ error: 'Failed to enroll' });
+    }
+});
 const start = async () => {
     try {
         const port = process.env.PORT ? parseInt(process.env.PORT) : 8080;

@@ -8,9 +8,9 @@ interface WalletBadgeProps {
 }
 
 const RISK_CLASS: Record<RiskLevel, string> = {
-  low: "border-axiom-good bg-white text-axiom-good",
-  medium: "border-axiom-warn bg-white text-axiom-warn",
-  high: "border-axiom-bad bg-white text-axiom-bad"
+  low: "border-axiom-good bg-axiom-panel text-axiom-good",
+  medium: "border-axiom-warn bg-axiom-panel text-axiom-warn",
+  high: "border-axiom-bad bg-axiom-panel text-axiom-bad"
 }
 
 export function WalletBadge({ label, riskLevel, onClick }: WalletBadgeProps) {

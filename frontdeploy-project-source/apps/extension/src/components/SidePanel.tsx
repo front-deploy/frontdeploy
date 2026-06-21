@@ -25,6 +25,7 @@ import { KolLiveFeed } from "./KolLiveFeed"
 import { WalletButton } from "./WalletButton"
 import { AxiomProPanel } from "./AxiomProPanel"
 import { getSettings, saveSettings, type OverlaySettings } from "../lib/storage"
+import { type Tier, hasAccess } from "../lib/holderTier"
 
 export function SidePanel() {
   const [activeTab, setActiveTab] = useState<"radar" | "kol" | "axiom">("kol")
@@ -39,7 +40,7 @@ export function SidePanel() {
   const [loadingIntelligence, setLoadingIntelligence] = useState(false)
   const [savedMessage, setSavedMessage] = useState("")
 
-  const [gateStatus, setGateStatus] = useState<{ isAllowed: boolean; balance: number; error?: string } | null>(null);
+  const [gateStatus, setGateStatus] = useState<{ tier: Tier; balance: number; error?: string } | null>(null);
   const [loadingGate, setLoadingGate] = useState(true);
 
   useEffect(() => {
@@ -53,7 +54,7 @@ export function SidePanel() {
         const result = await checkTokenGate(session.publicKey);
         if (mounted) setGateStatus(result);
       } else {
-        if (mounted) setGateStatus({ isAllowed: false, balance: 0, error: "Please connect your wallet to use the extension." });
+        if (mounted) setGateStatus({ tier: "none", balance: 0, error: "Please connect your wallet to use the extension." });
       }
       if (mounted) setLoadingGate(false);
     };
@@ -206,14 +207,14 @@ export function SidePanel() {
 
         {activeTab === "axiom" ? (
           <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden p-4">
-            {!gateStatus?.isAllowed ? (
+            {!hasAccess(gateStatus?.tier || "none", "axiomOverlay") ? (
               <div className="p-6 text-center mt-8">
                 <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">
                   <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
                 <p className="mt-2 text-sm text-axiom-muted">
-                  {gateStatus?.error || "Hold 10,000,000 $FDP to unlock Axiom Pro."}
+                  {gateStatus?.error || "Hold 5,000,000 $FDP (Plus Tier) to unlock Axiom Pro."}
                 </p>
               </div>
             ) : !selected || selected.type !== "token" ? (
@@ -244,14 +245,14 @@ export function SidePanel() {
           </div>
         ) : activeTab === "kol" ? (
           <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden">
-            {!gateStatus?.isAllowed ? (
+            {!hasAccess(gateStatus?.tier || "none", "kolAlerts") ? (
               <div className="p-6 text-center mt-8">
                 <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">
                   <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
                 <p className="mt-2 text-sm text-axiom-muted">
-                  {gateStatus?.error || "Hold 10,000,000 $FDP to unlock the realtime KOL Live Feed."}
+                  {gateStatus?.error || "Hold 2,500,000 $FDP (Base Tier) to unlock KOL Live Feed."}
                 </p>
               </div>
             ) : (
@@ -277,7 +278,7 @@ export function SidePanel() {
               onTypeChange={setManualType}
               onInspect={() => void handleInspectManualAddress()}
             />
-            <section className="mt-6 rounded-sm border border-axiom-border bg-white p-4">
+            <section className="mt-6 rounded-sm border border-axiom-border bg-axiom-panel p-4">
               <p className="text-sm text-axiom-muted">
                 Axiom wallet and token intelligence is available below the launch workspace.
               </p>
@@ -317,14 +318,14 @@ export function SidePanel() {
 
       {activeTab === "axiom" ? (
         <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden p-4">
-          {!gateStatus?.isAllowed ? (
+          {!hasAccess(gateStatus?.tier || "none", "axiomOverlay") ? (
             <div className="p-6 text-center mt-8">
               <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">
                 <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
               <p className="mt-2 text-sm text-axiom-muted">
-                {gateStatus?.error || "Hold 10,000,000 $FDP to unlock Axiom Pro."}
+                {gateStatus?.error || "Hold 5,000,000 $FDP (Plus Tier) to unlock Axiom Pro."}
               </p>
             </div>
           ) : !selected || selected.type !== "token" ? (
@@ -355,14 +356,14 @@ export function SidePanel() {
         </div>
       ) : activeTab === "kol" ? (
         <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden">
-          {!gateStatus?.isAllowed ? (
+          {!hasAccess(gateStatus?.tier || "none", "kolAlerts") ? (
             <div className="p-6 text-center mt-8">
               <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">
                 <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
               <p className="mt-2 text-sm text-axiom-muted">
-                {gateStatus?.error || "Hold 10,000,000 $FDP to unlock the realtime KOL Live Feed."}
+                {gateStatus?.error || "Hold 2,500,000 $FDP (Base Tier) to unlock the realtime KOL Live Feed."}
               </p>
             </div>
           ) : (
@@ -390,7 +391,7 @@ export function SidePanel() {
           />
 
           <section className="mt-4 space-y-4">
-        <div className="rounded-sm border border-axiom-border bg-white p-4">
+        <div className="rounded-sm border border-axiom-border bg-axiom-panel p-4">
           <p className="text-xs uppercase text-axiom-muted">{selected.type}</p>
           <p className="mt-2 break-all font-mono text-sm text-axiom-text">
             {selected.address}
@@ -404,13 +405,13 @@ export function SidePanel() {
           </div>
         </div>
 
-        <div className="rounded-sm border border-axiom-border bg-white p-4">
+        <div className="rounded-sm border border-axiom-border bg-axiom-panel p-4">
           <label className="text-xs font-semibold text-axiom-muted" htmlFor="label">
             User label
           </label>
           <input
             id="label"
-            className="mt-2 w-full rounded-sm border border-axiom-border bg-white px-3 py-2 text-sm text-axiom-text outline-none focus:border-axiom-accent"
+            className="mt-2 w-full rounded-sm border border-axiom-border bg-axiom-panel px-3 py-2 text-sm text-axiom-text outline-none focus:border-axiom-accent"
             value={label}
             placeholder="e.g. Alpha caller, market maker, risky wallet"
             onChange={(event) => setLabel(event.target.value)}
@@ -426,7 +427,7 @@ export function SidePanel() {
           ) : null}
         </div>
 
-        <div className="rounded-sm border border-axiom-border bg-white p-4">
+        <div className="rounded-sm border border-axiom-border bg-axiom-panel p-4">
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm text-axiom-muted">Risk score</span>
             <span className="text-lg font-bold text-axiom-text">
@@ -442,7 +443,7 @@ export function SidePanel() {
           ) : null}
         </div>
 
-        <div className="rounded-sm border border-axiom-border bg-white p-4">
+        <div className="rounded-sm border border-axiom-border bg-axiom-panel p-4">
           <h2 className="text-sm font-semibold">Recent intelligence</h2>
           <ul className="mt-3 space-y-2">
             {intelligence.recentActivity.map((activity) => (
@@ -478,7 +479,7 @@ function LaunchWorkspace({
 }) {
   if (!context) {
     return (
-      <section className="mt-4 rounded-sm border border-axiom-border bg-white p-4">
+      <section className="mt-4 rounded-sm border border-axiom-border bg-axiom-panel p-4">
         <p className="text-xs font-bold uppercase text-axiom-muted">X launch radar</p>
         <h2 className="mt-1 text-xl font-bold leading-tight">Waiting for X signal</h2>
         <p className="mt-3 text-sm leading-6 text-axiom-muted">
@@ -491,7 +492,7 @@ function LaunchWorkspace({
   const draft = createLaunchDraft(context)
 
   return (
-    <section className="mt-4 space-y-3 rounded-sm border border-axiom-border bg-white p-4">
+    <section className="mt-4 space-y-3 rounded-sm border border-axiom-border bg-axiom-panel p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase text-axiom-muted">X launch radar</p>
@@ -608,13 +609,13 @@ function ManualInspector({
   onInspect: () => void
 }) {
   return (
-    <section className="mt-4 rounded-sm border border-axiom-border bg-white p-4">
+    <section className="mt-4 rounded-sm border border-axiom-border bg-axiom-panel p-4">
       <div className="flex items-center justify-between gap-2">
         <label className="text-xs font-semibold text-axiom-muted" htmlFor="manual-address">
           Inspect address
         </label>
         <select
-          className="rounded-sm border border-axiom-border bg-white px-2 py-1 text-xs text-axiom-text outline-none focus:border-axiom-accent"
+          className="rounded-sm border border-axiom-border bg-axiom-panel px-2 py-1 text-xs text-axiom-text outline-none focus:border-axiom-accent"
           value={type}
           onChange={(event) => onTypeChange(event.target.value as SolanaAddressType)}>
           <option value="wallet">Wallet</option>
@@ -623,7 +624,7 @@ function ManualInspector({
       </div>
       <input
         id="manual-address"
-        className="mt-2 w-full rounded-sm border border-axiom-border bg-white px-3 py-2 font-mono text-xs text-axiom-text outline-none focus:border-axiom-accent"
+        className="mt-2 w-full rounded-sm border border-axiom-border bg-axiom-panel px-3 py-2 font-mono text-xs text-axiom-text outline-none focus:border-axiom-accent"
         value={address}
         placeholder="Paste Solana wallet or token address"
         onChange={(event) => onAddressChange(event.target.value)}

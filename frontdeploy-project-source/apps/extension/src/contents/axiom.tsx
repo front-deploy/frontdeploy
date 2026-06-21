@@ -1,6 +1,9 @@
 import type { PlasmoCSConfig } from "plasmo"
-import { useEffect } from "react"
-import { saveSelectedAddress, getSelectedAddress } from "../lib/storage"
+import { useEffect, useState } from "react"
+import { saveSelectedAddress } from "../lib/storage"
+import { getWalletStatus } from "../lib/popup-api"
+import { checkTokenGate } from "../lib/tokenGate"
+import { ChartOverlay } from "../components/ChartOverlay"
 
 export const config: PlasmoCSConfig = {
   matches: ["https://axiom.trade/*"],
@@ -9,6 +12,9 @@ export const config: PlasmoCSConfig = {
 
 // Monitors the URL for token addresses and syncs them to the extension's side panel
 export default function AxiomCSUI() {
+  const [activeToken, setActiveToken] = useState<string | null>(null)
+  const [tier, setTier] = useState<"none" | "base" | "plus" | "founding">("none")
+
   useEffect(() => {
     let lastUrl = window.location.href
     let lastContextKey = ""
@@ -27,6 +33,16 @@ export default function AxiomCSUI() {
       if (!force && currentUrl === lastUrl && !tokenAddress) return
 
       if (tokenAddress) {
+        if (tokenAddress !== activeToken) {
+          setActiveToken(tokenAddress)
+          // Fetch tier when a new token is found
+          getWalletStatus().then(session => {
+            checkTokenGate(session?.publicKey).then(gate => {
+              setTier(gate.tier)
+            }).catch(console.warn)
+          }).catch(console.warn)
+        }
+
         // Attempt to scrape social links and market cap from the page to populate the form
         const links = Array.from(document.querySelectorAll<HTMLAnchorElement>("a[href]")).map(a => a.href)
         const githubRepoUrl = links.find((href) => href.includes("github.com"))
@@ -77,6 +93,7 @@ export default function AxiomCSUI() {
             })
         }
       } else {
+        setActiveToken(null)
         lastUrl = currentUrl
       }
     }
@@ -85,8 +102,17 @@ export default function AxiomCSUI() {
     const interval = setInterval(() => checkUrl(false), 1500)
     
     return () => clearInterval(interval)
-  }, [])
+  }, [activeToken])
 
-  // Render a hidden element to ensure React mounts this component and keeps it alive
-  return <div style={{ display: 'none' }} data-axiom-csui="active" />
+  if (!activeToken) {
+    return <div style={{ display: 'none' }} data-axiom-csui="active" />
+  }
+
+  return (
+    <>
+      <div style={{ display: 'none' }} data-axiom-csui="active" />
+      <ChartOverlay tokenAddress={activeToken} tier={tier} />
+    </>
+  )
 }
+

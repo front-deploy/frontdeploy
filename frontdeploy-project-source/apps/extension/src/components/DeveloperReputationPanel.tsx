@@ -87,7 +87,7 @@ export function DeveloperReputationPanel({
   }
 
   return (
-    <section className="rounded-sm border border-axiom-border bg-white p-4">
+    <section className="rounded-sm border border-axiom-border bg-axiom-panel p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase text-axiom-muted">Developer reputation</p>
@@ -140,7 +140,7 @@ export function DeveloperReputationPanel({
         <label className="block">
           <span className="text-xs font-bold uppercase text-axiom-muted">Narrative</span>
           <textarea
-            className="mt-1 min-h-16 w-full resize-none rounded-sm border border-axiom-border bg-white px-3 py-2 text-xs text-axiom-text outline-none focus:border-axiom-accent"
+            className="mt-1 min-h-16 w-full resize-none rounded-sm border border-axiom-border bg-axiom-panel px-3 py-2 text-xs text-axiom-text outline-none focus:border-axiom-accent"
             value={narrative}
             placeholder="e.g. Coinbase replied, Sam Altman narrative, dev account posted CA"
             onChange={(event) => setNarrative(event.target.value)}
@@ -158,7 +158,7 @@ export function DeveloperReputationPanel({
         </button>
         <button
           type="button"
-          className="rounded-sm border border-axiom-border bg-white px-3 py-2 text-sm font-bold text-axiom-text transition hover:bg-axiom-bg disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-sm border border-axiom-border bg-axiom-panel px-3 py-2 text-sm font-bold text-axiom-text transition hover:bg-axiom-bg disabled:cursor-not-allowed disabled:opacity-50"
           disabled={loading}
           onClick={() => {
             setLocalContext(undefined)
@@ -220,7 +220,7 @@ function AuditInput({
     <label className="block">
       <span className="text-xs font-bold uppercase text-axiom-muted">{label}</span>
       <input
-        className="mt-1 w-full rounded-sm border border-axiom-border bg-white px-3 py-2 text-xs text-axiom-text outline-none focus:border-axiom-accent"
+        className="mt-1 w-full rounded-sm border border-axiom-border bg-axiom-panel px-3 py-2 text-xs text-axiom-text outline-none focus:border-axiom-accent"
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}

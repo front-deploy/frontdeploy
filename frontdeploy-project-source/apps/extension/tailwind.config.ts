@@ -6,15 +6,15 @@ const config: Config = {
     extend: {
       colors: {
         axiom: {
-          bg: "#F7F7F2",
-          panel: "#FFFFFF",
-          border: "#111111",
-          text: "#111111",
-          muted: "#6F6F68",
-          accent: "#111111",
-          good: "#0B7A3B",
-          warn: "#9A6700",
-          bad: "#B42318"
+          bg: "#0A0A0B",
+          panel: "#121214",
+          border: "#27272A",
+          text: "#FAFAFA",
+          muted: "#A1A1AA",
+          accent: "#3B82F6",
+          good: "#22C55E",
+          warn: "#EAB308",
+          bad: "#EF4444"
         }
       }
     }

@@ -143,7 +143,7 @@ function BackendUrlInput({
       <span className="text-xs font-bold uppercase text-axiom-muted">API URL</span>
       <input
         type="url"
-        className="mt-1 w-full rounded-sm border border-axiom-border bg-white px-3 py-2 text-xs text-axiom-text outline-none focus:border-axiom-accent"
+        className="mt-1 w-full rounded-sm border border-axiom-border bg-axiom-panel px-3 py-2 text-xs text-axiom-text outline-none focus:border-axiom-accent"
         value={value}
         placeholder="http://127.0.0.1:8787"
         onChange={(event) => onChange(event.target.value.trim())}
@@ -162,7 +162,7 @@ function ToggleRow({
   onChange: (enabled: boolean) => void
 }) {
   return (
-    <label className="flex items-center justify-between gap-3 rounded-sm border border-axiom-border bg-white p-3">
+    <label className="flex items-center justify-between gap-3 rounded-sm border border-axiom-border bg-axiom-panel p-3">
       <span className="text-sm font-bold">{label}</span>
       <input
         type="checkbox"

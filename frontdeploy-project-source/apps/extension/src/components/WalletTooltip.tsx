@@ -19,7 +19,7 @@ export function WalletTooltip({
   reputationLoading = false
 }: WalletTooltipProps) {
   return (
-    <div className="w-80 rounded-sm border border-axiom-border bg-white p-3 text-axiom-text shadow-none">
+    <div className="w-80 rounded-sm border border-axiom-border bg-axiom-panel p-3 text-axiom-text shadow-none">
       <div className="mb-3 grid grid-cols-[1fr_auto] items-start gap-3 border-b border-axiom-border pb-3">
         <div>
           <p className="text-xs uppercase text-axiom-muted">
