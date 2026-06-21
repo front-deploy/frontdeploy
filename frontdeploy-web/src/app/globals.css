@@ -1,14 +1,14 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --white: #FAFAFA;
-  --black: #0A0A0A;
-  --gray-100: #F0F0F0;
-  --gray-200: #E0E0E0;
-  --gray-300: #C0C0C0;
-  --gray-400: #8A8A8A;
-  --gray-500: #6A6A6A;
-  --accent: #0052FF;
+  --white: #111111; /* Dark background */
+  --black: #ffffff; /* Light text */
+  --gray-100: #1a1a1a;
+  --gray-200: #2a2a2a;
+  --gray-300: #4a4a4a;
+  --gray-400: #8a8a8a;
+  --gray-500: #a0a0a0;
+  --accent: #ffffff; /* White */
   --serif: var(--font-instrument-serif), Georgia, serif;
   --sans: var(--font-dm-sans), -apple-system, sans-serif;
   --grid: 80px;
@@ -31,7 +31,7 @@ body {
 /* ─── NAV ─── */
 nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  background: rgba(250,250,250,0.85);
+  background: rgba(17,17,17,0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--gray-200);
@@ -55,20 +55,22 @@ nav {
 
 .nav-links { display: flex; gap: 32px; align-items: center; }
 .nav-links a {
-  font-size: 13px; color: var(--gray-500);
+  font-size: 14px; color: var(--black);
   text-decoration: none; letter-spacing: 0.02em;
-  transition: color 0.2s;
+  transition: opacity 0.2s;
+  font-weight: 500;
 }
-.nav-links a:hover { color: var(--black); }
+.nav-links a:hover { opacity: 0.7; }
 
 .nav-cta {
-  font-size: 12px !important; color: var(--white) !important;
-  background: var(--black); padding: 8px 20px;
-  border-radius: 100px; letter-spacing: 0.06em;
-  text-transform: uppercase; font-weight: 500;
-  transition: background 0.2s, transform 0.15s;
+  font-size: 14px !important; color: #111 !important;
+  background: var(--black); padding: 5px 16px;
+  border-radius: 100px; letter-spacing: 0.02em;
+  text-transform: none; font-weight: 500;
+  border: 1px solid var(--black);
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
-.nav-cta:hover { background: #222; transform: translateY(-1px); }
+.nav-cta:hover { background: transparent; color: var(--black) !important; border-color: var(--black); }
 
 /* ─── HERO ─── */
 .hero {
@@ -77,6 +79,16 @@ nav {
   padding: 120px var(--page-px) 80px;
   max-width: var(--page-max); margin: 0 auto;
   position: relative;
+  z-index: 1;
+}
+
+.hero > * {
+  position: relative;
+  z-index: 2;
+}
+
+.hero .matrix-bg {
+  z-index: 0;
 }
 
 .hero-number {
@@ -109,7 +121,7 @@ nav {
   border-radius: 50%;
   overflow: hidden;
   justify-self: end;
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.08), 0 24px 80px rgba(0,255,140,0.18);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 24px 80px rgba(255,255,255,0.1);
 }
 
 .hero-logo img {
@@ -139,17 +151,17 @@ nav {
 
 .btn-primary {
   display: inline-flex; align-items: center; gap: 10px;
-  background: var(--black); color: var(--white);
+  background: var(--black); color: #111;
   padding: 16px 36px;
   border-radius: 100px;
   text-decoration: none;
-  font-size: 14px; font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 16px; font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
   transition: all 0.25s;
-  border: none; cursor: pointer;
+  border: 1px solid var(--black); cursor: pointer;
 }
-.btn-primary:hover { background: #1a1a1a; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+.btn-primary:hover { background: transparent; color: var(--black); border-color: var(--black); }
 .btn-primary svg { width: 16px; height: 16px; }
 
 .btn-secondary {
@@ -158,10 +170,10 @@ nav {
   padding: 16px 36px;
   border-radius: 100px;
   text-decoration: none;
-  font-size: 14px; font-weight: 400;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border: 1px solid var(--gray-200);
+  font-size: 16px; font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  border: 1px solid var(--gray-300);
   transition: all 0.25s;
 }
 .btn-secondary:hover { border-color: var(--black); }
@@ -210,17 +222,21 @@ nav {
 .features-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--gray-200);
-  border: 1px solid var(--gray-200);
+  gap: 16px;
+  background: transparent;
+  border: none;
 }
 
 .feature-card {
-  background: var(--white);
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   padding: 48px 36px;
-  transition: background 0.3s;
+  transition: background 0.3s, transform 0.2s;
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 16px;
 }
-.feature-card:hover { background: var(--gray-100); }
+.feature-card:hover { background: rgba(255,255,255,0.06); transform: translateY(-2px); }
 
 .feature-number {
   font-family: var(--serif);
@@ -309,8 +325,11 @@ nav {
 }
 
 .install-box {
-  background: var(--black);
-  color: var(--white);
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--black);
+  border: 1px solid rgba(255,255,255,0.05);
   border-radius: 16px;
   padding: 56px 48px;
 }
@@ -376,10 +395,12 @@ nav {
 
 /* ─── TICKER ─── */
 .ticker-section {
-  background: var(--black);
-  color: var(--white);
+  background: rgba(255,255,255,0.02);
+  color: var(--black);
   padding: 64px 0;
   overflow: hidden;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
 .ticker-track {
@@ -408,6 +429,28 @@ nav {
   text-align: center;
   padding: 120px var(--page-px) 100px;
   max-width: var(--page-max); margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-ascii-bg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 2vw;
+  line-height: 0.8;
+  color: rgba(255, 255, 255, 0.03);
+  z-index: 0;
+  pointer-events: none;
+  white-space: pre;
+  user-select: none;
+}
+
+.cta-section > * {
+  position: relative;
+  z-index: 1;
 }
 
 .cta-section h2 {
@@ -479,4 +522,25 @@ footer p {
 @media (max-width: 600px) {
   .feature-card { padding: 32px 24px; }
   .install-box { padding: 40px 28px; }
+}
+
+/* ─── MATRIX BACKGROUND ─── */
+.matrix-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: clamp(10px, 1.6vw, 18px);
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  word-spacing: -2px;
+  text-align: justify;
+  word-break: break-all;
+  hyphens: none;
+  color: rgba(255,255,255,0.06);
+  user-select: none;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%);
 }
