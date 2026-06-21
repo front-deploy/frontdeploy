@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useTokenGate } from "@/hooks/useTokenGate";
 
 export function Navbar() {
@@ -23,7 +24,10 @@ export function Navbar() {
       }}
     >
       <div className="nav-inner">
-        <div className="nav-logo">Frontdeploy</div>
+        <div className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Image src="/logo.png" alt="logo" width={24} height={24} style={{ borderRadius: '50%', objectFit: 'cover' }} />
+          Frontdeploy
+        </div>
         <div className="nav-links">
           <Link href="/#features">Features</Link>
           <Link href="/#how">How it works</Link>
