@@ -6,6 +6,7 @@ import { useTokenGate } from "@/hooks/useTokenGate";
 
 import { GLOBE_ASCII } from "./Cta";
 import { AsciiBackground } from "./AsciiBackground";
+import { InteractiveLogo } from "./InteractiveLogo";
 
 export function Hero() {
   const { addElement } = useIntersectionObserver();
@@ -39,15 +40,7 @@ export function Hero() {
           <br />
           you do
         </h1>
-        <div className="hero-logo fade-in stagger-2" ref={addElement}>
-          <Image
-            src="/logo.png"
-            alt="Frontdeploy logo"
-            width={1254}
-            height={1254}
-            priority
-          />
-        </div>
+        <InteractiveLogo />
       </div>
       <p className="hero-sub fade-in stagger-2" ref={addElement}>
         AI-powered launch radar that scans X/Twitter in real-time, generates
