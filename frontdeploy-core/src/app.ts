@@ -343,7 +343,7 @@ app.post('/v1/enroll-founding', async (request, reply) => {
     const { walletAddress } = body;
     
     // Check balance on-chain
-    const FDP_MINT = "2vCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump";
+    const FDP_MINT = process.env.FRONTDEPLOY_CA || "2vCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump";
     const rpcUrl = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
     const connection = new Connection(rpcUrl, "confirmed");
     const pubKey = new PublicKey(walletAddress);
@@ -360,7 +360,7 @@ app.post('/v1/enroll-founding', async (request, reply) => {
       totalBalance += uiAmount;
     }
 
-    const FOUNDING_THRESHOLD = 10_000_000;
+    const FOUNDING_THRESHOLD = parseInt(process.env.FOUNDING_THRESHOLD || "10000000");
     const ENROLLMENT_DEADLINE = new Date('2026-07-20T23:59:59Z');
 
     if (new Date() > ENROLLMENT_DEADLINE) {

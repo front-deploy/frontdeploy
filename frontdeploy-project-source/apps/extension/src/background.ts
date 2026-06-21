@@ -298,32 +298,42 @@ function ensureWebSocket() {
   };
 }
 
-function handleKolEvent(event: any) {
-  // Save to local storage for the KolLiveFeed component to read
-  chrome.storage.local.get(["kolEvents"], (result) => {
-    const events = result.kolEvents || [];
-    events.unshift(event);
-    // Keep max 100 events
-    if (events.length > 100) events.length = 100;
-    chrome.storage.local.set({ kolEvents: events });
-  });
+let eventQueue = Promise.resolve();
 
-  // Only notify if it's a signal
-  if (event.isSignal) {
-    const notifId = `kol-${event.tweetId}`;
-    chrome.notifications.create(notifId, {
-      type: "basic",
-      iconUrl: chrome.runtime.getURL(iconUrl) || iconUrl, // fallback
-      title: `🚨 Signal from @${event.authorHandle}`,
-      message: `${event.ticker || event.contractAddress} detected!\n${event.text}`,
-      buttons: [
-        { title: "Deploy (pump.fun)" },
-        { title: "View Tweet" }
-      ],
-      priority: 2,
-      requireInteraction: true
+function handleKolEvent(event: any) {
+  eventQueue = eventQueue.then(() => new Promise<void>((resolve) => {
+    chrome.storage.local.get(["kolEvents"], (result) => {
+      const events = result.kolEvents || [];
+      // Prevent duplicates
+      if (!events.some((e: any) => e.tweetId === event.tweetId)) {
+        events.unshift(event);
+        // Keep max 100 events
+        if (events.length > 100) events.length = 100;
+        
+        chrome.storage.local.set({ kolEvents: events }, () => {
+          // Only notify if it's a signal and we actually added it
+          if (event.isSignal) {
+            const notifId = `kol-${event.tweetId}`;
+            chrome.notifications.create(notifId, {
+              type: "basic",
+              iconUrl: chrome.runtime.getURL(iconUrl) || iconUrl, // fallback
+              title: `🚨 Signal from @${event.authorHandle}`,
+              message: `${event.ticker || event.contractAddress} detected!\n${event.text}`,
+              buttons: [
+                { title: "Deploy (pump.fun)" },
+                { title: "View Tweet" }
+              ],
+              priority: 2,
+              requireInteraction: true
+            });
+          }
+          resolve();
+        });
+      } else {
+        resolve();
+      }
     });
-  }
+  }));
 }
 
 chrome.notifications.onButtonClicked.addListener((notifId, btnIdx) => {

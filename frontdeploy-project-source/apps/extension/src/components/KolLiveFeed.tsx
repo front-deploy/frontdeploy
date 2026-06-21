@@ -90,7 +90,7 @@ export function KolLiveFeed() {
                         });
                       }
                     }}
-                    className="ml-auto px-3 py-1 bg-axiom-text text-white text-xs font-semibold rounded hover:bg-axiom-text/90 transition-colors"
+                    className="ml-auto px-3 py-1 bg-black text-white border border-axiom-border text-xs font-semibold rounded hover:bg-black/80 transition-colors"
                   >
                     Deploy
                   </button>

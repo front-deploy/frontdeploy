@@ -9,6 +9,11 @@ export async function checkTokenGate(publicKeyBase58: string | undefined): Promi
     return { tier: "none", balance: 0, error: "Please connect your wallet first." };
   }
 
+  if (String(process.env.PLASMO_PUBLIC_DEV_BYPASS_GATING) === "true") {
+    console.info(`[TokenGate Debug] DEV BYPASS ENABLED. Automatically granting Founding tier to ${publicKeyBase58}`);
+    return { tier: "founding", balance: 99999999 };
+  }
+
   try {
     const settings = await getLaunchSettings();
     const primaryRpcUrl = settings.rpcUrl || process.env.PLASMO_PUBLIC_RPC_URL;

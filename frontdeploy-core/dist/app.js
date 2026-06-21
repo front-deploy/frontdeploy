@@ -328,23 +328,33 @@ app.post('/v1/enroll-founding', async (request, reply) => {
             return reply.status(400).send({ error: 'walletAddress is required' });
         }
         const { walletAddress } = body;
-        // Check balance on-chain
-        const FDP_MINT = "2vCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump";
-        const rpcUrl = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
-        const connection = new Connection(rpcUrl, "confirmed");
-        const pubKey = new PublicKey(walletAddress);
-        const mintKey = new PublicKey(FDP_MINT);
-        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(pubKey, {
-            mint: mintKey,
-        });
-        let totalBalance = 0;
-        for (const account of tokenAccounts.value) {
-            const parsedInfo = account.account.data.parsed.info;
-            const uiAmount = parsedInfo.tokenAmount.uiAmount || 0;
-            totalBalance += uiAmount;
+        const TIER_FOUNDING = parseInt(process.env.TIER_FOUNDING || "10000000");
+        const ENROLLMENT_DEADLINE = new Date('2026-07-20T23:59:59Z');
+        if (new Date() > ENROLLMENT_DEADLINE) {
+            return reply.status(403).send({ error: 'Founding Member enrollment ended on July 20th. You will still receive Founding Tier features based on your balance, but not the early status badge.' });
         }
-        const FOUNDING_THRESHOLD = 10_000_000;
-        if (totalBalance >= FOUNDING_THRESHOLD) {
+        let totalBalance = 0;
+        if (process.env.DEV_BYPASS_GATING === "true") {
+            app.log.info(`[Dev Bypass] Skipping on-chain balance check. Automatically granting Founding Tier to ${walletAddress}`);
+            totalBalance = TIER_FOUNDING;
+        }
+        else {
+            // Check balance on-chain
+            const FDP_MINT = process.env.FRONTDEPLOY_CA || "2vCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump";
+            const rpcUrl = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
+            const connection = new Connection(rpcUrl, "confirmed");
+            const pubKey = new PublicKey(walletAddress);
+            const mintKey = new PublicKey(FDP_MINT);
+            const tokenAccounts = await connection.getParsedTokenAccountsByOwner(pubKey, {
+                mint: mintKey,
+            });
+            for (const account of tokenAccounts.value) {
+                const parsedInfo = account.account.data.parsed.info;
+                const uiAmount = parsedInfo.tokenAmount.uiAmount || 0;
+                totalBalance += uiAmount;
+            }
+        }
+        if (totalBalance >= TIER_FOUNDING) {
             const user = await prisma.user.upsert({
                 where: { walletAddress },
                 update: {
