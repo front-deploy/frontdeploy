@@ -30,6 +30,7 @@ export function AxiomProPanel({ mintAddress, context }: { mintAddress: string, c
         const res = await fetch(`${backendUrl}/v1/risk/token/${mintAddress}`)
         if (res.ok) {
           const data = await res.json()
+          
           if (active) {
             setIntel({
               address: mintAddress,

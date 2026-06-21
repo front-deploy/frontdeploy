@@ -285,16 +285,19 @@ function startWhenReady() {
     }
 
     try {
+      // Launch Radar (X signal detection) is a FREE feature. Mount unconditionally.
+      mountXLaunchScanner()
+
+      // KOL Live features (like the in-feed tracked badge) are PRO features.
       const session = await getWalletStatus()
       const gate = await checkTokenGate(session?.publicKey)
-      if (!gate.isAllowed) {
-        console.info("[Frontdeploy] Token gate not passed. Radar disabled on X.")
-        return
+      if (gate.isAllowed) {
+        await fetchWatchlist()
+      } else {
+        console.info("[Frontdeploy] Token gate not passed. KOL tracking badges disabled on X.")
       }
-      await fetchWatchlist()
-      mountXLaunchScanner()
     } catch (err) {
-      console.warn("[Frontdeploy] Failed to verify token gate:", err)
+      console.warn("[Frontdeploy] Error during X initialization:", err)
     }
   }
 

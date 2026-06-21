@@ -1,12 +1,14 @@
+import 'dotenv/config';
 import fastify from 'fastify';
 import { Connection, PublicKey } from '@solana/web3.js';
-import { getMint } from '@solana/spl-token';
+import { getMint, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import websocketPlugin from '@fastify/websocket';
 import cors from '@fastify/cors';
 import { WebSocketService } from './services/websocketService.js';
 import { IngestionPipeline } from './services/ingestionPipeline.js';
 import { TwitterApiIoSource } from './services/twitterApiIoSource.js';
 import { MockSimulatorService } from './services/mockSimulator.js';
+import webhookRoutes from './routes/webhookRoutes.js';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -30,6 +32,7 @@ let wsService: WebSocketService;
 app.register(async (instance) => {
   wsService = new WebSocketService(instance);
   wsService.registerRoutes();
+  webhookRoutes(instance, wsService);
 
   // Start services
   if (process.env.USE_MOCK_STREAM === 'true' || !process.env.TWITTER_PROVIDER_KEY) {
@@ -109,7 +112,40 @@ app.post('/v1/reputation/developer', async (request, reply) => {
     }
     
     const { tokenAddress, websiteUrl, githubRepoUrl, xPostUrl, narrative, marketCapUsd } = body;
-    const walletAddress = tokenAddress; // Simplification
+    
+    // Resolve true deployer using Helius RPC
+    let deployerAddress = tokenAddress; // fallback
+    try {
+      const rpcUrl = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
+      const connection = new Connection(rpcUrl);
+      const pubkey = new PublicKey(tokenAddress);
+      
+      // Fetch earliest signature
+      const sigs = await connection.getSignaturesForAddress(pubkey, { limit: 1000 });
+      if (sigs.length > 0) {
+        // The last signature in the array is the oldest (earliest) one in this chunk
+        const earliestSig = sigs[sigs.length - 1]?.signature;
+        if (earliestSig) {
+          const tx = await connection.getParsedTransaction(earliestSig, { maxSupportedTransactionVersion: 0 });
+          if (tx && tx.transaction.message.accountKeys.length > 0) {
+             // The first account is the fee payer / transaction signer
+             const signer = tx.transaction.message.accountKeys.find((k: any) => k.signer);
+             if (signer) {
+               deployerAddress = signer.pubkey.toBase58();
+             } else {
+               const firstKey = tx.transaction.message.accountKeys[0];
+               if (firstKey) {
+                 deployerAddress = firstKey.pubkey.toBase58();
+               }
+             }
+          }
+        }
+      }
+    } catch (e) {
+      app.log.warn(`Could not resolve deployer for ${tokenAddress}: ${e}`);
+    }
+
+    const walletAddress = deployerAddress;
 
     let deployer = await prisma.deployerHistory.findUnique({
       where: { walletAddress }
@@ -209,10 +245,17 @@ app.get<{ Params: { mint: string } }>('/v1/risk/token/:mint', async (request, re
     let totalSupply = 0n;
 
     try {
-      const mintInfo = await getMint(connection, mintPubkey);
-      isMintRevoked = mintInfo.mintAuthority === null;
-      isFreezeRevoked = mintInfo.freezeAuthority === null;
-      totalSupply = mintInfo.supply;
+      try {
+        const mintInfo = await getMint(connection, mintPubkey, "confirmed", TOKEN_PROGRAM_ID);
+        isMintRevoked = mintInfo.mintAuthority === null;
+        isFreezeRevoked = mintInfo.freezeAuthority === null;
+        totalSupply = mintInfo.supply;
+      } catch (err) {
+        const mintInfo2022 = await getMint(connection, mintPubkey, "confirmed", TOKEN_2022_PROGRAM_ID);
+        isMintRevoked = mintInfo2022.mintAuthority === null;
+        isFreezeRevoked = mintInfo2022.freezeAuthority === null;
+        totalSupply = mintInfo2022.supply;
+      }
     } catch (err) {
       mintFetchFailed = true;
       app.log.warn(`Failed to fetch mint info for ${mint}`);

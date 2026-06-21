@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { WalletButton } from "./WalletButton";
+
 import { FastLaunch } from "./FastLaunch";
 import { getWalletStatus } from "../lib/popup-api";
 import { checkTokenGate } from "../lib/tokenGate";
@@ -36,8 +36,7 @@ export function LaunchPanel() {
 
   return (
     <div className="p-4 flex flex-col gap-2">
-      <h2 className="text-lg font-medium text-axiom-text mb-2">Wallet & Fast Launch</h2>
-      <WalletButton />
+      <h2 className="text-lg font-medium text-axiom-text mb-2">Fast Launch</h2>
       
       {loading ? (
         <div className="text-axiom-muted text-sm mt-4 text-center">Checking $FDP balance...</div>

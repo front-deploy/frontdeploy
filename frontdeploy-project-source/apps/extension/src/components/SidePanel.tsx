@@ -22,7 +22,7 @@ import {
 import { DeveloperReputationPanel } from "./DeveloperReputationPanel"
 import { LaunchPanel } from "./LaunchPanel"
 import { KolLiveFeed } from "./KolLiveFeed"
-
+import { WalletButton } from "./WalletButton"
 import { AxiomProPanel } from "./AxiomProPanel"
 import { getSettings, saveSettings, type OverlaySettings } from "../lib/storage"
 
@@ -181,9 +181,7 @@ export function SidePanel() {
     return (
       <main className="min-h-screen bg-axiom-bg p-4 text-axiom-text">
         <PanelHeader />
-        <div className="-mx-4 border-b border-axiom-border pb-2 mb-4">
-          <LaunchPanel />
-        </div>
+
 
         <div className="flex items-center gap-4 mb-4 border-b border-axiom-border pb-2">
           <button 
@@ -262,6 +260,9 @@ export function SidePanel() {
           </div>
         ) : (
           <>
+            <div className="-mx-4 border-b border-axiom-border pb-4 mb-4">
+              <LaunchPanel />
+            </div>
             <LaunchWorkspace
               context={launchContext}
               copied={copied}
@@ -291,9 +292,7 @@ export function SidePanel() {
   return (
     <main className="min-h-screen bg-axiom-bg p-4 text-axiom-text">
       <PanelHeader />
-      <div className="-mx-4 border-b border-axiom-border pb-2 mb-4">
-        <LaunchPanel />
-      </div>
+
 
       <div className="flex items-center gap-4 mb-4 border-b border-axiom-border pb-2">
         <button 
@@ -372,6 +371,9 @@ export function SidePanel() {
         </div>
       ) : (
         <>
+          <div className="-mx-4 border-b border-axiom-border pb-4 mb-4">
+            <LaunchPanel />
+          </div>
           <LaunchWorkspace
             context={launchContext}
             copied={copied}
@@ -692,11 +694,16 @@ function formatLaunchMetadata(draft: LaunchDraft) {
 
 function PanelHeader() {
   return (
-    <header>
-      <p className="text-xs font-bold uppercase text-axiom-muted">Frontdeploy</p>
-      <h1 className="mt-1 border-b border-axiom-border pb-3 text-2xl font-bold leading-none">
-        Launch Radar
-      </h1>
+    <header className="flex justify-between items-start">
+      <div>
+        <p className="text-xs font-bold uppercase text-axiom-muted">Frontdeploy</p>
+        <h1 className="mt-1 pb-3 text-2xl font-bold leading-none">
+          Axiom Agent
+        </h1>
+      </div>
+      <div className="pt-1">
+        <WalletButton />
+      </div>
     </header>
   )
 }
