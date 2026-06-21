@@ -187,12 +187,46 @@ app.post('/v1/reputation/developer', async (request, reply) => {
       score += 20;
       checks.push({ name: "GitHub Verified", status: "pass", detail: `GitHub repo found: ${githubRepoUrl}`, weight: 20 });
       evidence.githubCaFound = true;
-      evidence.github = {
-        fullName: githubRepoUrl.split("github.com/")[1] || "repo",
-        stars: 12,
-        forks: 3,
-        ageDays: 30
-      };
+      
+      if (process.env.USE_MOCK_STREAM === 'true') {
+        evidence.github = {
+          fullName: githubRepoUrl.split("github.com/")[1] || "repo",
+          stars: 12,
+          forks: 3,
+          ageDays: 30
+        };
+      } else {
+        try {
+          const match = githubRepoUrl.match(/github\.com\/([^\/]+\/[^\/]+)/);
+          if (match && match[1]) {
+            const repoPath = match[1].replace(/\.git$/, '');
+            const ghRes = await fetch(`https://api.github.com/repos/${repoPath}`, {
+              headers: { 'User-Agent': 'Frontdeploy-Core' }
+            });
+            if (ghRes.ok) {
+              const ghJson = await ghRes.json() as any;
+              const createdAt = new Date(ghJson.created_at);
+              const ageDays = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+              evidence.github = {
+                fullName: ghJson.full_name,
+                stars: ghJson.stargazers_count,
+                forks: ghJson.forks_count,
+                ageDays: ageDays
+              };
+            } else {
+              // Fallback if API rate limited or repo not found
+              evidence.github = {
+                fullName: repoPath,
+                stars: 0,
+                forks: 0,
+                ageDays: 0
+              };
+            }
+          }
+        } catch (e) {
+          app.log.warn(`Failed to fetch real github stats for ${githubRepoUrl}`);
+        }
+      }
     } else {
       checks.push({ name: "GitHub Verified", status: "warn", detail: `No GitHub repo provided.`, weight: 20 });
     }
