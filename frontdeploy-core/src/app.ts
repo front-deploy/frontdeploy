@@ -10,6 +10,8 @@ import { TwitterApiIoSource } from './services/twitterApiIoSource.js';
 import { MockSimulatorService } from './services/mockSimulator.js';
 import webhookRoutes from './routes/webhookRoutes.js';
 import { PrismaClient } from '@prisma/client';
+import cron from 'node-cron';
+import { exec } from 'child_process';
 
 const prisma = new PrismaClient();
 
@@ -45,6 +47,21 @@ app.register(async (instance) => {
     const pipeline = new IngestionPipeline(source, wsService, app.log, pollIntervalMs);
     await pipeline.start();
   }
+
+  // Schedule Buyback and Burn every 6 hours
+  cron.schedule('0 */6 * * *', () => {
+    app.log.info('Running scheduled buyback-and-burn script...');
+    exec('npm run buyback-and-burn', { cwd: process.cwd() }, (error, stdout, stderr) => {
+      if (error) {
+        app.log.error(`Buyback and burn cron error: ${error.message}`);
+        return;
+      }
+      if (stderr) {
+        app.log.warn(`Buyback and burn cron stderr: ${stderr}`);
+      }
+      app.log.info(`Buyback and burn cron output:\n${stdout}`);
+    });
+  });
 });
 
 app.get('/health', async (request, reply) => {
