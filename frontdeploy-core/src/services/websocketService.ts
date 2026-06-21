@@ -39,10 +39,12 @@ export class WebSocketService {
             }
             this.tokenSubscriptions.get(payload.mint)!.add(connection);
             this.app.log.info(`Client subscribed to mint: ${payload.mint}`);
+            this.updateHeliusWebhook();
           } else if (payload.action === 'unsubscribe' && payload.mint) {
             if (this.tokenSubscriptions.has(payload.mint)) {
               this.tokenSubscriptions.get(payload.mint)!.delete(connection);
               this.app.log.info(`Client unsubscribed from mint: ${payload.mint}`);
+              this.updateHeliusWebhook();
             }
           }
         } catch (e) {
@@ -60,6 +62,7 @@ export class WebSocketService {
             this.tokenSubscriptions.delete(mint);
           }
         }
+        this.updateHeliusWebhook();
       });
 
       // Send a welcome message
@@ -84,6 +87,58 @@ export class WebSocketService {
         this.app.log.error(err, 'Failed to fetch recent events for new connection');
       }
     });
+  }
+
+  private webhookId: string | null = null;
+  private async updateHeliusWebhook() {
+    const mints = Array.from(this.tokenSubscriptions.keys());
+    if (mints.length === 0 && !this.webhookId) return; // Nothing to do
+
+    const apiKey = process.env.HELIUS_RPC_URL?.split('api-key=')[1];
+    if (!apiKey) return;
+
+    const webhookUrl = process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL 
+      ? `${process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL.replace(/\/+$/, '')}/v1/webhooks/helius`
+      : 'https://frontdeploy-production.up.railway.app/v1/webhooks/helius';
+
+    try {
+      if (!this.webhookId) {
+        // Create webhook
+        if (mints.length === 0) return;
+        const res = await fetch(`https://api.helius.xyz/v0/webhooks?api-key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            webhookURL: webhookUrl,
+            transactionTypes: ["SWAP", "TRANSFER"],
+            accountAddresses: mints,
+            webhookType: "enhanced"
+          })
+        });
+        if (res.ok) {
+          const data = await res.json() as any;
+          this.webhookId = data.webhookID;
+          this.app.log.info(`Created Helius Webhook ${this.webhookId} for mints: ${mints.join(', ')}`);
+        }
+      } else {
+        // Update existing webhook
+        const res = await fetch(`https://api.helius.xyz/v0/webhooks/${this.webhookId}?api-key=${apiKey}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            webhookURL: webhookUrl,
+            transactionTypes: ["SWAP", "TRANSFER"],
+            accountAddresses: mints.length > 0 ? mints : ["11111111111111111111111111111111"], // Helius requires at least 1 address
+            webhookType: "enhanced"
+          })
+        });
+        if (res.ok) {
+          this.app.log.info(`Updated Helius Webhook ${this.webhookId} for mints: ${mints.join(', ')}`);
+        }
+      }
+    } catch (err) {
+      this.app.log.error(err, 'Failed to update Helius Webhook');
+    }
   }
 
   public handleHeliusWebhook(events: any[]) {

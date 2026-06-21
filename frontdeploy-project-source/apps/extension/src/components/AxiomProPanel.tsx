@@ -44,8 +44,8 @@ export function AxiomProPanel({ mintAddress, context }: { mintAddress: string, c
                 label: data.level === "high" ? "Risky" : data.level === "medium" ? "Watch" : "Clean"
               },
               holderRisk: `Top 10: ${data.details?.top10Concentration}%`,
-              freshWalletActivity: "Unknown",
-              whaleActivity: "Unknown",
+              freshWalletActivity: data.details?.freshWalletActivity || "Unknown",
+              whaleActivity: data.details?.whaleActivity || "Unknown",
               summary: data.warnings?.join(" ") || "Token appears clean. Authority revoked and routes clear.",
               recentActivity: []
             })
