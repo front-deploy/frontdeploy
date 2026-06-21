@@ -12,8 +12,10 @@ export interface KolEventPayload {
 export declare class WebSocketService {
     private app;
     private connections;
+    private tokenSubscriptions;
     constructor(app: FastifyInstance);
     registerRoutes(): void;
+    handleHeliusWebhook(events: any[]): void;
     broadcastEvent(event: KolEventPayload): void;
 }
 //# sourceMappingURL=websocketService.d.ts.map

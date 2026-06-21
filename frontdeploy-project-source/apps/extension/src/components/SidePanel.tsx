@@ -725,7 +725,7 @@ function SidePanelFooter() {
       <div className="flex items-center justify-between">
         <span>Version 1.0.0</span>
         <a 
-          href="https://x.com/frontdeploy1" 
+          href="https://x.com/frontdeployx" 
           target="_blank" 
           rel="noreferrer"
           className="text-axiom-text hover:text-axiom-muted transition-colors flex items-center gap-1"
