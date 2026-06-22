@@ -144,6 +144,7 @@ export class WebSocketService {
   }
 
   public handleHeliusWebhook(events: any[]) {
+    this.app.log.info(`[Helius Webhook] Received ${events?.length || 0} events`);
     if (!Array.isArray(events)) return;
 
     for (const tx of events) {
@@ -155,8 +156,10 @@ export class WebSocketService {
       }
 
       for (const mint of mintsInvolved) {
+        this.app.log.info(`[Helius Webhook] Parsed mint: ${mint} from tx ${tx.signature}`);
         if (this.tokenSubscriptions.has(mint)) {
           const clients = this.tokenSubscriptions.get(mint)!;
+          this.app.log.info(`[Helius Webhook] Found ${clients.size} connected clients for mint ${mint}`);
           
           const mainAccount = tx.feePayer || "SmartWallet";
           let action = "SWAP";
@@ -207,12 +210,15 @@ export class WebSocketService {
             }
           });
 
+          this.app.log.info(`[Helius Webhook] Classified ${action} amount ${parsedAmount} as ${flowType} for ${mainAccount}. Sending to clients...`);
+
           for (const client of clients) {
             if (client.readyState === 1 /* OPEN */) {
               client.send(message);
               client.send(flowMessage); // Also send flow event to subscribed clients
             }
           }
+          this.app.log.info(`[Helius Webhook] Broadcast successful for tx ${tx.signature}`);
         }
       }
     }

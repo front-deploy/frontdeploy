@@ -111,10 +111,12 @@ export function ChartOverlay({ tokenAddress, tier }: ChartOverlayProps) {
       if (!isActive) return;
       const wsUrl = settings.backendUrl.replace(/^http/, 'ws') + '/ws/kol-alerts';
       
+      console.log(`[Flow Radar] Connecting to WebSocket: ${wsUrl}`);
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
+        console.log(`[Flow Radar] WebSocket connected. Subscribing to mint: ${tokenAddress}`);
         setIsLive(true);
         ws.send(JSON.stringify({ action: "subscribe", mint: tokenAddress }));
       };
@@ -122,8 +124,14 @@ export function ChartOverlay({ tokenAddress, tier }: ChartOverlayProps) {
       ws.onmessage = (msg) => {
         try {
           const payload = JSON.parse(msg.data);
+          // Only log flow_events to avoid spamming the console with smart_money events if they are ignored here
+          if (payload.type === "flow_event") {
+             console.log("[Flow Radar] Received flow_event payload:", payload);
+          }
+
           if (payload.type === "flow_event" && payload.data.mint === tokenAddress) {
             const ev = payload.data as FlowEvent;
+            console.log(`[Flow Radar] Processing FlowEvent: Type=${ev.type}, Volume=$${ev.volumeUsd}, Wallet=${ev.wallet}`);
             
             setEvents(prev => {
               const newEvents = [...prev, ev];
@@ -147,7 +155,12 @@ export function ChartOverlay({ tokenAddress, tier }: ChartOverlayProps) {
         }
       };
 
+      ws.onerror = (error) => {
+        console.error("[Flow Radar] WebSocket error:", error);
+      };
+
       ws.onclose = () => {
+        console.log("[Flow Radar] WebSocket closed.");
         setIsLive(false);
       };
     });
