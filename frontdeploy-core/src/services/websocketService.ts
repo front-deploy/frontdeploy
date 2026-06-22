@@ -105,6 +105,28 @@ export class WebSocketService {
 
     try {
       if (!this.webhookId) {
+        // Fetch existing webhooks to prevent duplicates
+        const getRes = await fetch(`https://api.helius.xyz/v0/webhooks?api-key=${apiKey}`);
+        if (getRes.ok) {
+          const existingWebhooks = await getRes.json() as any[];
+          const myWebhooks = existingWebhooks.filter(w => w.webhookURL === webhookUrl);
+          
+          if (myWebhooks.length > 0) {
+            // Use the first one
+            this.webhookId = myWebhooks[0].webhookID;
+            
+            // Delete any extra duplicate webhooks pointing to our URL
+            for (let i = 1; i < myWebhooks.length; i++) {
+              await fetch(`https://api.helius.xyz/v0/webhooks/${myWebhooks[i].webhookID}?api-key=${apiKey}`, {
+                method: 'DELETE'
+              });
+              this.app.log.info(`Deleted duplicate Helius Webhook ${myWebhooks[i].webhookID}`);
+            }
+          }
+        }
+      }
+
+      if (!this.webhookId) {
         // Create webhook
         if (mints.length === 0) return;
         const res = await fetch(`https://api.helius.xyz/v0/webhooks?api-key=${apiKey}`, {
