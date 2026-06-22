@@ -9,6 +9,7 @@ export type AxiomTokenContext = {
   websiteUrl?: string
   githubRepoUrl?: string
   xPostUrl?: string
+  pumpFunUrl?: string
   marketCapUsd?: number
   narrative?: string
   source: "axiom-card" | "axiom-link" | "manual"
@@ -59,6 +60,7 @@ export function extractAxiomTokenContext(
   const xLinks = links.filter((href) => isXUrl(href))
   const xPostUrl = xLinks.find((href) => /\/status\/\d+/.test(href)) ?? xLinks[0]
   const websiteUrl = links.find((href) => isLikelyProjectWebsite(href))
+  const pumpFunUrl = links.find((href) => isPumpFunUrl(href))
   const ticker = readTicker(text)
   const shortAddress = readShortAddress(text)
   const marketCapUsd = readMarketCap(text)
@@ -82,6 +84,7 @@ export function extractAxiomTokenContext(
   if (websiteUrl) context.websiteUrl = websiteUrl
   if (githubRepoUrl) context.githubRepoUrl = githubRepoUrl
   if (xPostUrl) context.xPostUrl = xPostUrl
+  if (pumpFunUrl) context.pumpFunUrl = pumpFunUrl
   if (marketCapUsd !== undefined) context.marketCapUsd = marketCapUsd
 
   return context
@@ -174,6 +177,15 @@ function isGithubRepoUrl(url: string): boolean {
   try {
     const parsed = new URL(url)
     return parsed.hostname === "github.com" && parsed.pathname.split("/").filter(Boolean).length >= 2
+  } catch {
+    return false
+  }
+}
+
+function isPumpFunUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, "")
+    return hostname === "pump.fun"
   } catch {
     return false
   }

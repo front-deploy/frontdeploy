@@ -66,18 +66,29 @@ export function DeveloperReputationPanel({
 
     getApiSettings().then(settings => {
       if (!isActive) return;
+
+      // If the context contains a pump.fun URL, extract the true token mint from it.
+      // Otherwise fallback to the tokenAddress (which might just be a pair address on Axiom).
+      let mintToVerify = tokenAddress;
+      if (context?.pumpFunUrl) {
+        const match = context.pumpFunUrl.match(/pump\.fun\/(?:coin\/)?([1-9A-HJ-NP-Za-km-z]{32,44})/);
+        if (match && match[1]) {
+          mintToVerify = match[1];
+        }
+      }
+
       const wsUrl = settings.backendUrl.replace(/^http/, 'ws') + '/ws/kol-alerts';
       const ws = new WebSocket(wsUrl);
       wsRef = ws;
 
       ws.onopen = () => {
-        ws.send(JSON.stringify({ action: "subscribe_ca_verify", mint: tokenAddress, websiteUrl }));
+        ws.send(JSON.stringify({ action: "subscribe_ca_verify", mint: mintToVerify, websiteUrl }));
       };
 
       ws.onmessage = (msg) => {
         try {
           const payload = JSON.parse(msg.data);
-          if (payload.type === "ca_verification_update" && payload.data.mint === tokenAddress) {
+          if (payload.type === "ca_verification_update" && payload.data.mint === mintToVerify) {
             setCaVerifyStatus((prev) => {
               if (prev?.state === "NOT POSTED" && payload.data.state === "CA POSTED") {
                 setToastMessage("Dev just posted the CA!");
