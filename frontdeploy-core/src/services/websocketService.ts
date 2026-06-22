@@ -21,7 +21,28 @@ export class WebSocketService {
   private tokenSubscriptions: Map<string, Set<WebSocket>> = new Map();
   private flowClassifier: FlowClassifier = new FlowClassifier();
 
-  constructor(private app: FastifyInstance) {}
+  constructor(private app: FastifyInstance) {
+    this.wipeAllWebhooks().catch(err => this.app.log.error(err, "Failed to wipe webhooks on startup"));
+  }
+
+  private async wipeAllWebhooks() {
+    const apiKey = process.env.HELIUS_RPC_URL?.split('api-key=')[1];
+    if (!apiKey) return;
+    try {
+      const getRes = await fetch(`https://api.helius.xyz/v0/webhooks?api-key=${apiKey}`);
+      if (getRes.ok) {
+        const existingWebhooks = await getRes.json() as any[];
+        for (const w of existingWebhooks) {
+          if (w.webhookURL.includes('frontdeploy')) {
+            await fetch(`https://api.helius.xyz/v0/webhooks/${w.webhookID}?api-key=${apiKey}`, { method: 'DELETE' });
+            this.app.log.info(`[Startup Cleanup] Deleted zombie Helius Webhook: ${w.webhookID}`);
+          }
+        }
+      }
+    } catch (e) {
+      this.app.log.error(e, "Error wiping webhooks");
+    }
+  }
 
   public getConnectionsCount(): number {
     return this.connections.size;
