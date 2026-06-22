@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { WebSocket } from '@fastify/websocket';
 import { PrismaClient } from '@prisma/client';
 import { FlowClassifier } from './flowClassifier.js';
+import { Connection, PublicKey } from '@solana/web3.js';
 
 const prisma = new PrismaClient();
 
@@ -20,28 +21,14 @@ export class WebSocketService {
   private connections: Set<WebSocket> = new Set();
   private tokenSubscriptions: Map<string, Set<WebSocket>> = new Map();
   private flowClassifier: FlowClassifier = new FlowClassifier();
+  private solanaConnection: Connection;
+  private mintListeners: Map<string, number> = new Map();
+  private pendingSignatures: Set<string> = new Set();
+  private batchTimer: NodeJS.Timeout | null = null;
 
   constructor(private app: FastifyInstance) {
-    this.wipeAllWebhooks().catch(err => this.app.log.error(err, "Failed to wipe webhooks on startup"));
-  }
-
-  private async wipeAllWebhooks() {
-    const apiKey = process.env.HELIUS_RPC_URL?.split('api-key=')[1];
-    if (!apiKey) return;
-    try {
-      const getRes = await fetch(`https://api.helius.xyz/v0/webhooks?api-key=${apiKey}`);
-      if (getRes.ok) {
-        const existingWebhooks = await getRes.json() as any[];
-        for (const w of existingWebhooks) {
-          if (w.webhookURL.includes('frontdeploy')) {
-            await fetch(`https://api.helius.xyz/v0/webhooks/${w.webhookID}?api-key=${apiKey}`, { method: 'DELETE' });
-            this.app.log.info(`[Startup Cleanup] Deleted zombie Helius Webhook: ${w.webhookID}`);
-          }
-        }
-      }
-    } catch (e) {
-      this.app.log.error(e, "Error wiping webhooks");
-    }
+    const rpcUrl = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
+    this.solanaConnection = new Connection(rpcUrl, 'confirmed');
   }
 
   public getConnectionsCount(): number {
@@ -62,12 +49,12 @@ export class WebSocketService {
             }
             this.tokenSubscriptions.get(payload.mint)!.add(connection);
             this.app.log.info(`Client subscribed to mint: ${payload.mint}`);
-            this.updateHeliusWebhook();
+            this.updateMintSubscription(payload.mint);
           } else if (payload.action === 'unsubscribe' && payload.mint) {
             if (this.tokenSubscriptions.has(payload.mint)) {
               this.tokenSubscriptions.get(payload.mint)!.delete(connection);
               this.app.log.info(`Client unsubscribed from mint: ${payload.mint}`);
-              this.updateHeliusWebhook();
+              this.updateMintSubscription(payload.mint);
             }
           }
         } catch (e) {
@@ -83,9 +70,9 @@ export class WebSocketService {
           subs.delete(connection);
           if (subs.size === 0) {
             this.tokenSubscriptions.delete(mint);
+            this.updateMintSubscription(mint);
           }
         }
-        this.updateHeliusWebhook();
       });
 
       // Send a welcome message
@@ -121,107 +108,83 @@ export class WebSocketService {
     }, 30000);
   }
 
-  private webhookId: string | null = null;
-  private async updateHeliusWebhook() {
-    const mints = Array.from(this.tokenSubscriptions.keys());
-    if (mints.length === 0) {
-      // If no one is subscribed, delete the webhook to save Helius quota
-      if (this.webhookId) {
-        const apiKey = process.env.HELIUS_RPC_URL?.split('api-key=')[1];
-        if (apiKey) {
-          await fetch(`https://api.helius.xyz/v0/webhooks/${this.webhookId}?api-key=${apiKey}`, { method: 'DELETE' });
-          this.app.log.info(`Deleted empty Helius Webhook ${this.webhookId}`);
-        }
-        this.webhookId = null;
+  private updateMintSubscription(mint: string) {
+    const hasClients = this.tokenSubscriptions.has(mint) && this.tokenSubscriptions.get(mint)!.size > 0;
+    
+    if (hasClients && !this.mintListeners.has(mint)) {
+      try {
+        const pubkey = new PublicKey(mint);
+        const id = this.solanaConnection.onLogs(
+          pubkey,
+          (logs) => {
+            if (logs.err) return; // Skip failed transactions
+            this.handleMintLog(logs.signature);
+          },
+          'confirmed'
+        );
+        this.mintListeners.set(mint, id);
+        this.app.log.info(`Started Solana onLogs listener for ${mint}`);
+      } catch (e) {
+        this.app.log.error(`Invalid PublicKey for mint: ${mint}`);
       }
-      return;
+    } else if (!hasClients && this.mintListeners.has(mint)) {
+      const id = this.mintListeners.get(mint)!;
+      this.solanaConnection.removeOnLogsListener(id).catch(e => this.app.log.error(e, 'Error removing log listener'));
+      this.mintListeners.delete(mint);
+      this.app.log.info(`Stopped Solana onLogs listener for ${mint}`);
+    }
+  }
+
+  private handleMintLog(signature: string) {
+    this.pendingSignatures.add(signature);
+    if (!this.batchTimer) {
+      this.batchTimer = setTimeout(() => this.processSignatureBatch(), 1000);
+    }
+  }
+
+  private async processSignatureBatch() {
+    this.batchTimer = null;
+    if (this.pendingSignatures.size === 0) return;
+
+    // Helius allows up to 100 signatures per request
+    const signatures = Array.from(this.pendingSignatures).slice(0, 100);
+    for (const sig of signatures) {
+      this.pendingSignatures.delete(sig);
     }
 
-    const apiKey = process.env.HELIUS_RPC_URL?.split('api-key=')[1];
-    if (!apiKey) return;
-
-    const webhookUrl = process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL 
-      ? `${process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL.replace(/\/+$/, '')}/v1/webhooks/helius`
-      : 'https://frontdeploy-production.up.railway.app/v1/webhooks/helius';
-
     try {
-      if (!this.webhookId) {
-        // Fetch existing webhooks to prevent duplicates
-        const getRes = await fetch(`https://api.helius.xyz/v0/webhooks?api-key=${apiKey}`);
-        if (getRes.ok) {
-          const existingWebhooks = await getRes.json() as any[];
-          const myWebhooks = existingWebhooks.filter(w => 
-            w.webhookURL === webhookUrl || w.webhookURL.includes('frontdeploy')
-          );
-          
-          if (myWebhooks.length > 0) {
-            // Use the first one
-            this.webhookId = myWebhooks[0].webhookID;
-            
-            // Delete any extra duplicate webhooks pointing to our URL
-            for (let i = 1; i < myWebhooks.length; i++) {
-              await fetch(`https://api.helius.xyz/v0/webhooks/${myWebhooks[i].webhookID}?api-key=${apiKey}`, {
-                method: 'DELETE'
-              });
-              this.app.log.info(`Deleted duplicate Helius Webhook ${myWebhooks[i].webhookID}`);
-            }
-          }
-        }
+      const apiKey = process.env.HELIUS_RPC_URL?.split('api-key=')[1];
+      if (!apiKey) {
+        this.app.log.error("Missing HELIUS_RPC_URL api key for parsing transactions");
+        return;
       }
-
-      if (!this.webhookId) {
-        // Create webhook
-        if (mints.length === 0) return;
-        const res = await fetch(`https://api.helius.xyz/v0/webhooks?api-key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            webhookURL: webhookUrl,
-            transactionTypes: ["ANY"],
-            accountAddresses: mints,
-            webhookType: "enhanced"
-          })
-        });
-        if (res.ok) {
-          const data = await res.json() as any;
-          this.webhookId = data.webhookID;
-          this.app.log.info(`Created Helius Webhook ${this.webhookId} for mints: ${mints.join(', ')}`);
-        } else {
-          const errText = await res.text().catch(() => res.statusText);
-          this.app.log.error(`Failed to create Helius Webhook: ${res.status} ${errText}`);
-        }
+      
+      const res = await fetch(`https://api.helius.xyz/v0/transactions/?api-key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactions: signatures })
+      });
+      
+      if (res.ok) {
+        const events = await res.json() as any[];
+        this.handleHeliusWebhook(events);
       } else {
-        // Update existing webhook
-        const res = await fetch(`https://api.helius.xyz/v0/webhooks/${this.webhookId}?api-key=${apiKey}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            webhookURL: webhookUrl,
-            transactionTypes: ["ANY"],
-            accountAddresses: mints,
-            webhookType: "enhanced"
-          })
-        });
-        if (res.ok) {
-          this.app.log.info(`Updated Helius Webhook ${this.webhookId} for mints: ${mints.join(', ')}`);
-        } else {
-          const errText = await res.text().catch(() => res.statusText);
-          this.app.log.error(`Failed to update Helius Webhook: ${res.status} ${errText}`);
-        }
+        const errText = await res.text().catch(() => res.statusText);
+        this.app.log.error(`Failed to fetch parsed transactions batch: ${res.status} ${errText}`);
       }
-    } catch (err) {
-      this.app.log.error(err, 'Failed to update Helius Webhook');
+    } catch (e) {
+      this.app.log.error(e, "Failed to fetch parsed transactions batch");
+    }
+
+    if (this.pendingSignatures.size > 0) {
+      this.batchTimer = setTimeout(() => this.processSignatureBatch(), 1000);
     }
   }
 
   public handleHeliusWebhook(events: any[]) {
-    this.app.log.info(`[Helius Webhook] Received ${events?.length || 0} events`);
     if (!Array.isArray(events)) return;
 
     for (const tx of events) {
-      // Debug log ALL received transactions to check if Helius is missing tokenTransfers
-      this.app.log.info(`[Helius Webhook] Processing tx: ${tx.signature}. tokenTransfers count: ${tx.tokenTransfers?.length || 0}`);
-
       if (!tx.tokenTransfers || tx.tokenTransfers.length === 0) continue;
 
       const mintsInvolved = new Set<string>();
@@ -230,10 +193,8 @@ export class WebSocketService {
       }
 
       for (const mint of mintsInvolved) {
-        this.app.log.info(`[Helius Webhook] Parsed mint: ${mint} from tx ${tx.signature}`);
         if (this.tokenSubscriptions.has(mint)) {
           const clients = this.tokenSubscriptions.get(mint)!;
-          this.app.log.info(`[Helius Webhook] Found ${clients.size} connected clients for mint ${mint}`);
           
           const mainAccount = tx.feePayer || "SmartWallet";
           let action = "SWAP";
@@ -269,8 +230,8 @@ export class WebSocketService {
             mint, 
             mainAccount, 
             action === "BUY" ? "BUY" : "SELL", 
-            true, // isNewWallet (mocked for now, or could check db)
-            parsedAmount // using actual amount as a proxy for volume since we don't have instant pricing
+            true, // isNewWallet (mocked for now)
+            parsedAmount
           );
 
           const flowMessage = JSON.stringify({
@@ -278,21 +239,18 @@ export class WebSocketService {
             data: {
               mint,
               type: flowType,
-              volumeUsd: parsedAmount > 0 ? parsedAmount : 10, // fallback if 0 to show something
+              volumeUsd: parsedAmount > 0 ? parsedAmount : 10,
               wallet: `Wallet ...${mainAccount.substring(mainAccount.length - 4)}`,
               txSignature: tx.signature
             }
           });
 
-          this.app.log.info(`[Helius Webhook] Classified ${action} amount ${parsedAmount} as ${flowType} for ${mainAccount}. Sending to clients...`);
-
           for (const client of clients) {
             if (client.readyState === 1 /* OPEN */) {
               client.send(message);
-              client.send(flowMessage); // Also send flow event to subscribed clients
+              client.send(flowMessage);
             }
           }
-          this.app.log.info(`[Helius Webhook] Broadcast successful for tx ${tx.signature}`);
         }
       }
     }
