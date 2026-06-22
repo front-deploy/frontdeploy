@@ -184,6 +184,16 @@ export function ChartOverlay({ tokenAddress, tier }: ChartOverlayProps) {
   
   const isSmall = width < 600;
 
+  const handleSync = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && tokenAddress) {
+      console.log("[Flow Radar] Manual sync requested for", tokenAddress);
+      wsRef.current.send(JSON.stringify({ action: "subscribe", mint: tokenAddress }));
+    } else {
+      console.log("[Flow Radar] WebSocket not open, cannot sync");
+    }
+  };
+
   if (!isOpen) return null;
 
   if (tier === "none" || tier === "base") {
@@ -240,6 +250,9 @@ export function ChartOverlay({ tokenAddress, tier }: ChartOverlayProps) {
               <div className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-[#00E599] shadow-[0_0_8px_#00E599]' : 'bg-[#52525B]'}`} />
               <span className="text-[10px] font-bold uppercase tracking-wider text-white">live</span>
             </div>
+            <button className="hover:text-[#00E599] transition-colors bg-[#27272A]/50 p-1.5 rounded hover:bg-[#27272A] shrink-0" onClick={handleSync} title="Force Sync Webhook" onMouseDown={(e) => e.stopPropagation()}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            </button>
             <button className="hover:text-white transition-colors bg-[#27272A]/50 p-1.5 rounded hover:bg-[#27272A] shrink-0" onClick={handleClose} title="Close Overlay" onMouseDown={(e) => e.stopPropagation()}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
