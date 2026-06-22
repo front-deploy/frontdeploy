@@ -89,6 +89,15 @@ export class WebSocketService {
         this.app.log.error(err, 'Failed to fetch recent events for new connection');
       }
     });
+
+    // Keep-alive ping every 30 seconds to prevent Railway/Nginx from dropping idle connections
+    setInterval(() => {
+      for (const connection of this.connections) {
+        if (connection.readyState === 1) { // WebSocket.OPEN
+          connection.send(JSON.stringify({ type: 'ping' }));
+        }
+      }
+    }, 30000);
   }
 
   private webhookId: string | null = null;
@@ -109,7 +118,9 @@ export class WebSocketService {
         const getRes = await fetch(`https://api.helius.xyz/v0/webhooks?api-key=${apiKey}`);
         if (getRes.ok) {
           const existingWebhooks = await getRes.json() as any[];
-          const myWebhooks = existingWebhooks.filter(w => w.webhookURL === webhookUrl);
+          const myWebhooks = existingWebhooks.filter(w => 
+            w.webhookURL === webhookUrl || w.webhookURL.includes('frontdeploy')
+          );
           
           if (myWebhooks.length > 0) {
             // Use the first one
@@ -143,6 +154,9 @@ export class WebSocketService {
           const data = await res.json() as any;
           this.webhookId = data.webhookID;
           this.app.log.info(`Created Helius Webhook ${this.webhookId} for mints: ${mints.join(', ')}`);
+        } else {
+          const errText = await res.text().catch(() => res.statusText);
+          this.app.log.error(`Failed to create Helius Webhook: ${res.status} ${errText}`);
         }
       } else {
         // Update existing webhook
@@ -158,6 +172,9 @@ export class WebSocketService {
         });
         if (res.ok) {
           this.app.log.info(`Updated Helius Webhook ${this.webhookId} for mints: ${mints.join(', ')}`);
+        } else {
+          const errText = await res.text().catch(() => res.statusText);
+          this.app.log.error(`Failed to update Helius Webhook: ${res.status} ${errText}`);
         }
       }
     } catch (err) {
