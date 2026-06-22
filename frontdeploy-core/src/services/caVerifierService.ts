@@ -1,6 +1,6 @@
 import { URL } from 'url';
 
-export type CaVerifyState = "CA POSTED" | "UNVERIFIED" | "NOT POSTED" | "NO WEBSITE";
+export type CaVerifyState = "CA POSTED" | "UNVERIFIED" | "NOT POSTED" | "NO WEBSITE" | "CA MISMATCH";
 
 export interface CaVerificationResult {
   state: CaVerifyState;
@@ -68,7 +68,22 @@ export class CaVerifierService {
         result.state = "CA POSTED";
         result.location = "Found in HTML";
       } else {
-        result.state = "NOT POSTED";
+        // Check if there's another token CA posted instead
+        const otherCaRegex = /(?:pump\.fun\/(?:coin\/)?|solscan\.io\/token\/|dexscreener\.com\/solana\/)([1-9A-HJ-NP-Za-km-z]{32,44})/g;
+        let match;
+        let foundOtherCa = false;
+        while ((match = otherCaRegex.exec(html)) !== null) {
+          if (match[1] !== mint) {
+            foundOtherCa = true;
+            break;
+          }
+        }
+
+        if (foundOtherCa) {
+          result.state = "CA MISMATCH";
+        } else {
+          result.state = "NOT POSTED";
+        }
       }
 
     } catch (err: any) {

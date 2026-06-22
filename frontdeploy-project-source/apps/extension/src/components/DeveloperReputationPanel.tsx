@@ -5,6 +5,7 @@ import {
   auditDeveloperReputation,
   type ReputationResponse
 } from "../lib/developerReputation"
+import { getApiSettings } from "../lib/storage"
 
 export function DeveloperReputationPanel({
   tokenAddress,
@@ -63,32 +64,30 @@ export function DeveloperReputationPanel({
     let isActive = true;
     let wsRef: WebSocket | null = null;
 
-    import("../lib/storage").then(({ getApiSettings }) => {
-      getApiSettings().then(settings => {
-        if (!isActive) return;
-        const wsUrl = settings.backendUrl.replace(/^http/, 'ws') + '/ws/kol-alerts';
-        const ws = new WebSocket(wsUrl);
-        wsRef = ws;
+    getApiSettings().then(settings => {
+      if (!isActive) return;
+      const wsUrl = settings.backendUrl.replace(/^http/, 'ws') + '/ws/kol-alerts';
+      const ws = new WebSocket(wsUrl);
+      wsRef = ws;
 
-        ws.onopen = () => {
-          ws.send(JSON.stringify({ action: "subscribe_ca_verify", mint: tokenAddress, websiteUrl }));
-        };
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ action: "subscribe_ca_verify", mint: tokenAddress, websiteUrl }));
+      };
 
-        ws.onmessage = (msg) => {
-          try {
-            const payload = JSON.parse(msg.data);
-            if (payload.type === "ca_verification_update" && payload.data.mint === tokenAddress) {
-              setCaVerifyStatus((prev) => {
-                if (prev?.state === "NOT POSTED" && payload.data.state === "CA POSTED") {
-                  setToastMessage("Dev just posted the CA!");
-                  setTimeout(() => setToastMessage(""), 5000);
-                }
-                return { state: payload.data.state, checkedAt: payload.data.checkedAt };
-              });
-            }
-          } catch (e) {}
-        };
-      });
+      ws.onmessage = (msg) => {
+        try {
+          const payload = JSON.parse(msg.data);
+          if (payload.type === "ca_verification_update" && payload.data.mint === tokenAddress) {
+            setCaVerifyStatus((prev) => {
+              if (prev?.state === "NOT POSTED" && payload.data.state === "CA POSTED") {
+                setToastMessage("Dev just posted the CA!");
+                setTimeout(() => setToastMessage(""), 5000);
+              }
+              return { state: payload.data.state, checkedAt: payload.data.checkedAt };
+            });
+          }
+        } catch (e) {}
+      };
     });
 
     return () => {
@@ -162,18 +161,27 @@ export function DeveloperReputationPanel({
         </div>
       ) : null}
 
-      {caVerifyStatus && (
-        <div className="mt-3 flex items-center justify-between rounded-sm border border-axiom-border bg-axiom-bg p-2 text-xs" title={`Last checked: ${new Date(caVerifyStatus.checkedAt).toLocaleTimeString()}`}>
-          <span className="font-bold text-axiom-text">Source CA Verified</span>
-          <span className={`font-bold uppercase ${
-            caVerifyStatus.state === 'CA POSTED' ? 'text-axiom-good' : 
-            caVerifyStatus.state === 'UNVERIFIED' ? 'text-axiom-warn' : 
-            caVerifyStatus.state === 'NOT POSTED' ? 'text-axiom-bad' : 'text-axiom-muted'
-          }`}>
-            {caVerifyStatus.state}
-          </span>
-        </div>
-      )}
+      {(() => {
+        const getBadgeColor = (state: string) => {
+          switch (state) {
+            case "CA POSTED": return "bg-axiom-good text-white";
+            case "CA MISMATCH": return "bg-orange-500 text-white";
+            case "NOT POSTED": return "bg-axiom-bad text-white";
+            case "NO WEBSITE": return "bg-axiom-muted text-black";
+            case "UNVERIFIED": return "bg-yellow-500 text-black";
+            default: return "bg-axiom-muted text-black";
+          }
+        };
+
+        return caVerifyStatus ? (
+          <div className="mt-3 flex items-center justify-between rounded-sm border border-axiom-border bg-axiom-bg p-2 text-xs" title={`Last checked: ${caVerifyStatus.checkedAt ? new Date(caVerifyStatus.checkedAt).toLocaleTimeString() : ""}`}>
+            <span className="font-bold text-axiom-text">Source CA Verified</span>
+            <span className={`px-2 py-1 rounded font-bold uppercase ${getBadgeColor(caVerifyStatus.state)}`}>
+              {caVerifyStatus.state}
+            </span>
+          </div>
+        ) : null;
+      })()}
 
       {toastMessage && (
         <div className="fixed bottom-4 right-4 z-[9999] bg-[#00E599] text-[#111] font-bold px-4 py-2 rounded shadow-lg animate-bounce">
