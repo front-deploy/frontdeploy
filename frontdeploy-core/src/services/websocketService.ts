@@ -3,6 +3,7 @@ import type { WebSocket } from '@fastify/websocket';
 import { PrismaClient } from '@prisma/client';
 import { FlowClassifier } from './flowClassifier.js';
 import { Connection, PublicKey } from '@solana/web3.js';
+import { CaVerifierService, type CaVerificationResult } from './caVerifierService.js';
 
 const prisma = new PrismaClient();
 
@@ -25,6 +26,9 @@ export class WebSocketService {
   private mintListeners: Map<string, number> = new Map();
   private pendingSignatures: Set<string> = new Set();
   private batchTimer: NodeJS.Timeout | null = null;
+  private caVerifier: CaVerifierService = new CaVerifierService();
+  private caVerifySubscriptions: Map<string, { websiteUrl: string, clients: Set<WebSocket>, lastState?: CaVerificationResult }> = new Map();
+  private caVerifyInterval: NodeJS.Timeout | null = null;
 
   constructor(private app: FastifyInstance) {
     const rpcUrl = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
@@ -56,6 +60,10 @@ export class WebSocketService {
               this.app.log.info(`Client unsubscribed from mint: ${payload.mint}`);
               this.updateMintSubscription(payload.mint);
             }
+          } else if (payload.action === 'subscribe_ca_verify' && payload.mint && payload.websiteUrl) {
+            this.handleCaVerifySubscribe(connection, payload.mint, payload.websiteUrl);
+          } else if (payload.action === 'unsubscribe_ca_verify' && payload.mint) {
+            this.handleCaVerifyUnsubscribe(connection, payload.mint);
           }
         } catch (e) {
           this.app.log.error('Invalid WS message received');
@@ -71,6 +79,17 @@ export class WebSocketService {
           if (subs.size === 0) {
             this.tokenSubscriptions.delete(mint);
             this.updateMintSubscription(mint);
+          }
+        }
+        
+        for (const [mint, subData] of this.caVerifySubscriptions.entries()) {
+          subData.clients.delete(connection);
+          if (subData.clients.size === 0) {
+            this.caVerifySubscriptions.delete(mint);
+            if (this.caVerifySubscriptions.size === 0 && this.caVerifyInterval) {
+              clearInterval(this.caVerifyInterval);
+              this.caVerifyInterval = null;
+            }
           }
         }
       });
@@ -106,6 +125,66 @@ export class WebSocketService {
         }
       }
     }, 30000);
+  }
+
+  private handleCaVerifySubscribe(connection: WebSocket, mint: string, websiteUrl: string) {
+    if (!this.caVerifySubscriptions.has(mint)) {
+      this.caVerifySubscriptions.set(mint, { websiteUrl, clients: new Set() });
+    }
+    const subData = this.caVerifySubscriptions.get(mint)!;
+    subData.clients.add(connection);
+    
+    // Send immediate last known state if available
+    if (subData.lastState && connection.readyState === 1) {
+      connection.send(JSON.stringify({ type: 'ca_verification_update', data: subData.lastState }));
+    } else {
+      // Trigger immediate check
+      this.checkCaForMint(mint);
+    }
+
+    // Start interval if not running
+    if (!this.caVerifyInterval) {
+      this.caVerifyInterval = setInterval(() => this.pollAllCaVerifications(), 30000); // Poll every 30s
+    }
+  }
+
+  private handleCaVerifyUnsubscribe(connection: WebSocket, mint: string) {
+    if (this.caVerifySubscriptions.has(mint)) {
+      const subData = this.caVerifySubscriptions.get(mint)!;
+      subData.clients.delete(connection);
+      if (subData.clients.size === 0) {
+        this.caVerifySubscriptions.delete(mint);
+        if (this.caVerifySubscriptions.size === 0 && this.caVerifyInterval) {
+          clearInterval(this.caVerifyInterval);
+          this.caVerifyInterval = null;
+        }
+      }
+    }
+  }
+
+  private async checkCaForMint(mint: string) {
+    const subData = this.caVerifySubscriptions.get(mint);
+    if (!subData) return;
+
+    try {
+      const result = await this.caVerifier.verifyWebsite(mint, subData.websiteUrl);
+      subData.lastState = result;
+
+      const payload = JSON.stringify({ type: 'ca_verification_update', data: result });
+      for (const client of subData.clients) {
+        if (client.readyState === 1) {
+          client.send(payload);
+        }
+      }
+    } catch (e) {
+      this.app.log.error(e, `Error verifying CA for mint ${mint}`);
+    }
+  }
+
+  private pollAllCaVerifications() {
+    for (const mint of this.caVerifySubscriptions.keys()) {
+      this.checkCaForMint(mint);
+    }
   }
 
   private updateMintSubscription(mint: string) {

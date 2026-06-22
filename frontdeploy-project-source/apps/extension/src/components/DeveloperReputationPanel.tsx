@@ -25,6 +25,9 @@ export function DeveloperReputationPanel({
   const [result, setResult] = useState<ReputationResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  
+  const [caVerifyStatus, setCaVerifyStatus] = useState<{ state: string, checkedAt: string } | null>(null)
+  const [toastMessage, setToastMessage] = useState("")
 
   useEffect(() => {
     setLocalContext(context)
@@ -49,6 +52,53 @@ export function DeveloperReputationPanel({
     // Always run audit automatically on mount or when context changes
     void runAudit(payload)
   }, [contextKey, tokenAddress])
+
+  useEffect(() => {
+    if (!tokenAddress) return;
+    if (!websiteUrl) {
+      setCaVerifyStatus({ state: "NO WEBSITE", checkedAt: new Date().toISOString() });
+      return;
+    }
+
+    let isActive = true;
+    let wsRef: WebSocket | null = null;
+
+    import("../lib/storage").then(({ getApiSettings }) => {
+      getApiSettings().then(settings => {
+        if (!isActive) return;
+        const wsUrl = settings.backendUrl.replace(/^http/, 'ws') + '/ws/kol-alerts';
+        const ws = new WebSocket(wsUrl);
+        wsRef = ws;
+
+        ws.onopen = () => {
+          ws.send(JSON.stringify({ action: "subscribe_ca_verify", mint: tokenAddress, websiteUrl }));
+        };
+
+        ws.onmessage = (msg) => {
+          try {
+            const payload = JSON.parse(msg.data);
+            if (payload.type === "ca_verification_update" && payload.data.mint === tokenAddress) {
+              setCaVerifyStatus((prev) => {
+                if (prev?.state === "NOT POSTED" && payload.data.state === "CA POSTED") {
+                  setToastMessage("Dev just posted the CA!");
+                  setTimeout(() => setToastMessage(""), 5000);
+                }
+                return { state: payload.data.state, checkedAt: payload.data.checkedAt };
+              });
+            }
+          } catch (e) {}
+        };
+      });
+    });
+
+    return () => {
+      isActive = false;
+      if (wsRef && wsRef.readyState === WebSocket.OPEN) {
+        wsRef.send(JSON.stringify({ action: "unsubscribe_ca_verify", mint: tokenAddress }));
+        wsRef.close();
+      }
+    };
+  }, [tokenAddress, websiteUrl])
 
   async function runAudit(overrides?: {
     websiteUrl: string
@@ -111,6 +161,25 @@ export function DeveloperReputationPanel({
           </p>
         </div>
       ) : null}
+
+      {caVerifyStatus && (
+        <div className="mt-3 flex items-center justify-between rounded-sm border border-axiom-border bg-axiom-bg p-2 text-xs" title={`Last checked: ${new Date(caVerifyStatus.checkedAt).toLocaleTimeString()}`}>
+          <span className="font-bold text-axiom-text">Source CA Verified</span>
+          <span className={`font-bold uppercase ${
+            caVerifyStatus.state === 'CA POSTED' ? 'text-axiom-good' : 
+            caVerifyStatus.state === 'UNVERIFIED' ? 'text-axiom-warn' : 
+            caVerifyStatus.state === 'NOT POSTED' ? 'text-axiom-bad' : 'text-axiom-muted'
+          }`}>
+            {caVerifyStatus.state}
+          </span>
+        </div>
+      )}
+
+      {toastMessage && (
+        <div className="fixed bottom-4 right-4 z-[9999] bg-[#00E599] text-[#111] font-bold px-4 py-2 rounded shadow-lg animate-bounce">
+          {toastMessage}
+        </div>
+      )}
 
       <div className="mt-3 space-y-2">
         <AuditInput
