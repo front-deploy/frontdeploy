@@ -8,6 +8,7 @@ export interface CaVerificationResult {
   websiteUrl: string;
   checkedAt: Date;
   location?: string;
+  mismatchedCa?: string;
 }
 
 export class CaVerifierService {
@@ -82,16 +83,19 @@ export class CaVerifierService {
         const otherCaRegex = /(?:pump\.fun\/(?:coin\/)?|solscan\.io\/token\/|dexscreener\.com\/solana\/)([1-9A-HJ-NP-Za-km-z]{32,44})/g;
         let match;
         let foundOtherCa = false;
+        let matchedCaStr = "";
         while ((match = otherCaRegex.exec(html)) !== null) {
           const matchedCa = match[1];
           if (matchedCa && !validMints.includes(matchedCa)) {
             foundOtherCa = true;
+            matchedCaStr = matchedCa;
             break;
           }
         }
 
         if (foundOtherCa) {
           result.state = "CA MISMATCH";
+          result.mismatchedCa = matchedCaStr;
         } else {
           result.state = "NOT POSTED";
         }

@@ -27,7 +27,7 @@ export function DeveloperReputationPanel({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   
-  const [caVerifyStatus, setCaVerifyStatus] = useState<{ state: string, checkedAt: string } | null>(null)
+  const [caVerifyStatus, setCaVerifyStatus] = useState<{ state: string, checkedAt: string, mismatchedCa?: string } | null>(null);
   const [toastMessage, setToastMessage] = useState("")
 
   useEffect(() => {
@@ -98,7 +98,11 @@ export function DeveloperReputationPanel({
                 setToastMessage("Dev just posted the CA!");
                 setTimeout(() => setToastMessage(""), 5000);
               }
-              return { state: payload.data.state, checkedAt: payload.data.checkedAt };
+              return { 
+                state: payload.data.state, 
+                checkedAt: payload.data.checkedAt,
+                mismatchedCa: payload.data.mismatchedCa
+              };
             });
           }
         } catch (e) {}
@@ -189,11 +193,18 @@ export function DeveloperReputationPanel({
         };
 
         return caVerifyStatus ? (
-          <div className="mt-3 flex items-center justify-between rounded-sm border border-axiom-border bg-axiom-bg p-2 text-xs" title={`Last checked: ${caVerifyStatus.checkedAt ? new Date(caVerifyStatus.checkedAt).toLocaleTimeString() : ""}`}>
-            <span className="font-bold text-axiom-text">Website CA Check</span>
-            <span className={`px-2 py-1 rounded font-bold uppercase ${getBadgeColor(caVerifyStatus.state)}`}>
-              {caVerifyStatus.state}
-            </span>
+          <div className="mt-3 rounded-sm border border-axiom-border bg-axiom-bg p-2 text-xs" title={`Last checked: ${caVerifyStatus.checkedAt ? new Date(caVerifyStatus.checkedAt).toLocaleTimeString() : ""}`}>
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-axiom-text">Website CA Check</span>
+              <span className={`px-2 py-1 rounded font-bold uppercase ${getBadgeColor(caVerifyStatus.state)}`}>
+                {caVerifyStatus.state}
+              </span>
+            </div>
+            {caVerifyStatus.state === "CA MISMATCH" && caVerifyStatus.mismatchedCa && (
+              <p className="mt-2 text-[10px] leading-4 text-axiom-warn">
+                Found mismatched CA: <span className="font-mono break-all font-bold select-all">{caVerifyStatus.mismatchedCa}</span>
+              </p>
+            )}
           </div>
         ) : null;
       })()}

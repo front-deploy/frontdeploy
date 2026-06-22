@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { FlowClassifier } from './flowClassifier.js';
 import { Connection, PublicKey } from '@solana/web3.js';
+import { CaVerifierService } from './caVerifierService.js';
 const prisma = new PrismaClient();
 export class WebSocketService {
     app;
@@ -11,6 +12,9 @@ export class WebSocketService {
     mintListeners = new Map();
     pendingSignatures = new Set();
     batchTimer = null;
+    caVerifier = new CaVerifierService();
+    caVerifySubscriptions = new Map();
+    caVerifyInterval = null;
     constructor(app) {
         this.app = app;
         const rpcUrl = process.env.HELIUS_RPC_URL || 'https://api.mainnet-beta.solana.com';
@@ -41,6 +45,12 @@ export class WebSocketService {
                             this.updateMintSubscription(payload.mint);
                         }
                     }
+                    else if (payload.action === 'subscribe_ca_verify' && payload.mint && payload.websiteUrl) {
+                        this.handleCaVerifySubscribe(connection, payload.mint, payload.websiteUrl);
+                    }
+                    else if (payload.action === 'unsubscribe_ca_verify' && payload.mint) {
+                        this.handleCaVerifyUnsubscribe(connection, payload.mint);
+                    }
                 }
                 catch (e) {
                     this.app.log.error('Invalid WS message received');
@@ -54,6 +64,16 @@ export class WebSocketService {
                     if (subs.size === 0) {
                         this.tokenSubscriptions.delete(mint);
                         this.updateMintSubscription(mint);
+                    }
+                }
+                for (const [mint, subData] of this.caVerifySubscriptions.entries()) {
+                    subData.clients.delete(connection);
+                    if (subData.clients.size === 0) {
+                        this.caVerifySubscriptions.delete(mint);
+                        if (this.caVerifySubscriptions.size === 0 && this.caVerifyInterval) {
+                            clearInterval(this.caVerifyInterval);
+                            this.caVerifyInterval = null;
+                        }
                     }
                 }
             });
@@ -86,14 +106,72 @@ export class WebSocketService {
             }
         }, 30000);
     }
+    handleCaVerifySubscribe(connection, mint, websiteUrl) {
+        if (!this.caVerifySubscriptions.has(mint)) {
+            this.caVerifySubscriptions.set(mint, { websiteUrl, clients: new Set() });
+        }
+        const subData = this.caVerifySubscriptions.get(mint);
+        subData.clients.add(connection);
+        // Send immediate last known state if available
+        if (subData.lastState && connection.readyState === 1) {
+            connection.send(JSON.stringify({ type: 'ca_verification_update', data: subData.lastState }));
+        }
+        else {
+            // Trigger immediate check
+            this.checkCaForMint(mint);
+        }
+        // Start interval if not running
+        if (!this.caVerifyInterval) {
+            this.caVerifyInterval = setInterval(() => this.pollAllCaVerifications(), 30000); // Poll every 30s
+        }
+    }
+    handleCaVerifyUnsubscribe(connection, mint) {
+        if (this.caVerifySubscriptions.has(mint)) {
+            const subData = this.caVerifySubscriptions.get(mint);
+            subData.clients.delete(connection);
+            if (subData.clients.size === 0) {
+                this.caVerifySubscriptions.delete(mint);
+                if (this.caVerifySubscriptions.size === 0 && this.caVerifyInterval) {
+                    clearInterval(this.caVerifyInterval);
+                    this.caVerifyInterval = null;
+                }
+            }
+        }
+    }
+    async checkCaForMint(mint) {
+        const subData = this.caVerifySubscriptions.get(mint);
+        if (!subData)
+            return;
+        try {
+            const result = await this.caVerifier.verifyWebsite(mint, subData.websiteUrl);
+            subData.lastState = result;
+            const payload = JSON.stringify({ type: 'ca_verification_update', data: result });
+            for (const client of subData.clients) {
+                if (client.readyState === 1) {
+                    client.send(payload);
+                }
+            }
+        }
+        catch (e) {
+            this.app.log.error(e, `Error verifying CA for mint ${mint}`);
+        }
+    }
+    pollAllCaVerifications() {
+        for (const mint of this.caVerifySubscriptions.keys()) {
+            this.checkCaForMint(mint);
+        }
+    }
     updateMintSubscription(mint) {
         const hasClients = this.tokenSubscriptions.has(mint) && this.tokenSubscriptions.get(mint).size > 0;
         if (hasClients && !this.mintListeners.has(mint)) {
             try {
                 const pubkey = new PublicKey(mint);
                 const id = this.solanaConnection.onLogs(pubkey, (logs) => {
-                    if (logs.err)
+                    this.app.log.info(`[Solana WebSocket] Log received for ${mint}. Signature: ${logs.signature}`);
+                    if (logs.err) {
+                        this.app.log.info(`[Solana WebSocket] Skipping failed tx: ${logs.signature}`);
                         return; // Skip failed transactions
+                    }
                     this.handleMintLog(logs.signature);
                 }, 'confirmed');
                 this.mintListeners.set(mint, id);
@@ -113,93 +191,158 @@ export class WebSocketService {
     handleMintLog(signature) {
         this.pendingSignatures.add(signature);
         if (!this.batchTimer) {
-            this.batchTimer = setTimeout(() => this.processSignatureBatch(), 1000);
+            // Wait 2 seconds to ensure the RPC node has fully indexed the confirmed block
+            this.batchTimer = setTimeout(() => this.processSignatureBatchNative(), 2000);
         }
     }
-    async processSignatureBatch() {
+    async processSignatureBatchNative() {
         this.batchTimer = null;
         if (this.pendingSignatures.size === 0)
             return;
-        // Helius allows up to 100 signatures per request
-        const signatures = Array.from(this.pendingSignatures).slice(0, 100);
+        // getParsedTransactions can fetch up to 250 signatures at once, but we use 25 to avoid RPC timeouts or massive payloads
+        const signatures = Array.from(this.pendingSignatures).slice(0, 25);
         for (const sig of signatures) {
             this.pendingSignatures.delete(sig);
         }
         try {
-            const apiKey = process.env.HELIUS_RPC_URL?.split('api-key=')[1];
-            if (!apiKey) {
-                this.app.log.error("Missing HELIUS_RPC_URL api key for parsing transactions");
-                return;
-            }
-            const res = await fetch(`https://api.helius.xyz/v0/transactions/?api-key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ transactions: signatures })
+            this.app.log.info(`[Native Parser] Fetching ${signatures.length} txs from RPC...`);
+            const parsedTxs = await this.solanaConnection.getParsedTransactions(signatures, {
+                maxSupportedTransactionVersion: 0,
+                commitment: 'confirmed'
             });
-            if (res.ok) {
-                const events = await res.json();
-                this.handleHeliusWebhook(events);
+            const events = [];
+            for (let i = 0; i < parsedTxs.length; i++) {
+                const tx = parsedTxs[i];
+                if (!tx || !tx.meta)
+                    continue;
+                const signature = signatures[i];
+                // Assume feePayer is the first signer
+                const feePayer = tx.transaction?.message?.accountKeys?.[0]?.pubkey.toString() || "Unknown";
+                const preBalances = tx.meta.preTokenBalances || [];
+                const postBalances = tx.meta.postTokenBalances || [];
+                // Calculate real USD volume based on feePayer's SOL balance changes
+                const preSol = (tx.meta.preBalances?.[0] || 0) / 1e9;
+                const postSol = (tx.meta.postBalances?.[0] || 0) / 1e9;
+                const solDiff = Math.abs(preSol - postSol);
+                const estimatedUsdVolume = solDiff * 140; // Assume 1 SOL = $140
+                const tokenTransfers = [];
+                const accounts = new Set([...preBalances.map(b => b.accountIndex), ...postBalances.map(b => b.accountIndex)]);
+                for (const accountIndex of accounts) {
+                    const pre = preBalances.find(b => b.accountIndex === accountIndex);
+                    const post = postBalances.find(b => b.accountIndex === accountIndex);
+                    const preAmount = pre ? (pre.uiTokenAmount.uiAmount || 0) : 0;
+                    const postAmount = post ? (post.uiTokenAmount.uiAmount || 0) : 0;
+                    const diff = postAmount - preAmount;
+                    if (Math.abs(diff) > 0) {
+                        const mint = (pre?.mint || post?.mint);
+                        const owner = (pre?.owner || post?.owner) || "Unknown";
+                        const isNewWallet = preAmount === 0; // If balance was 0 before tx, it's a new holder
+                        if (diff > 0) {
+                            tokenTransfers.push({
+                                mint,
+                                toUserAccount: owner,
+                                tokenAmount: diff,
+                                fromUserAccount: "System",
+                                usdVolume: estimatedUsdVolume,
+                                isNewWallet: isNewWallet
+                            });
+                        }
+                        else {
+                            tokenTransfers.push({
+                                mint,
+                                fromUserAccount: owner,
+                                tokenAmount: Math.abs(diff),
+                                toUserAccount: "System",
+                                usdVolume: estimatedUsdVolume,
+                                isNewWallet: false // Sells are never new wallets
+                            });
+                        }
+                    }
+                }
+                if (tokenTransfers.length > 0) {
+                    events.push({
+                        signature,
+                        feePayer,
+                        tokenTransfers,
+                        accountKeys: tx.transaction?.message?.accountKeys?.map((k) => k.pubkey.toString()) || []
+                    });
+                }
             }
-            else {
-                const errText = await res.text().catch(() => res.statusText);
-                this.app.log.error(`Failed to fetch parsed transactions batch: ${res.status} ${errText}`);
-            }
+            this.app.log.info(`[Native Parser] Successfully parsed ${events.length} txs with token transfers`);
+            this.handleHeliusWebhook(events);
         }
         catch (e) {
-            this.app.log.error(e, "Failed to fetch parsed transactions batch");
+            this.app.log.error(e, "Failed to natively fetch parsed transactions");
         }
         if (this.pendingSignatures.size > 0) {
-            this.batchTimer = setTimeout(() => this.processSignatureBatch(), 1000);
+            this.batchTimer = setTimeout(() => this.processSignatureBatchNative(), 2000);
         }
     }
     handleHeliusWebhook(events) {
+        this.app.log.info(`[handleHeliusWebhook] Received ${events?.length || 0} parsed transactions`);
         if (!Array.isArray(events))
             return;
         for (const tx of events) {
+            this.app.log.info(`[handleHeliusWebhook] TX ${tx.signature} | tokenTransfers count: ${tx.tokenTransfers?.length || 0} | type: ${tx.type} | source: ${tx.source}`);
             if (!tx.tokenTransfers || tx.tokenTransfers.length === 0)
                 continue;
-            const mintsInvolved = new Set();
+            const involvedAddresses = new Set();
             for (const transfer of tx.tokenTransfers) {
-                mintsInvolved.add(transfer.mint);
+                involvedAddresses.add(transfer.mint);
             }
-            for (const mint of mintsInvolved) {
-                if (this.tokenSubscriptions.has(mint)) {
-                    const clients = this.tokenSubscriptions.get(mint);
+            if (tx.accountKeys) {
+                for (const key of tx.accountKeys) {
+                    involvedAddresses.add(key);
+                }
+            }
+            this.app.log.info(`[handleHeliusWebhook] Mints/Accounts involved: ${Array.from(involvedAddresses).slice(0, 3).join(', ')}...`);
+            for (const address of involvedAddresses) {
+                if (this.tokenSubscriptions.has(address)) {
+                    this.app.log.info(`[handleHeliusWebhook] Matched subscribed address: ${address}. Broadcasting!`);
+                    const clients = this.tokenSubscriptions.get(address);
                     const mainAccount = tx.feePayer || "SmartWallet";
                     let action = "SWAP";
-                    let amount = "Unknown";
-                    for (const transfer of tx.tokenTransfers) {
-                        if (transfer.mint === mint) {
-                            if (transfer.toUserAccount === mainAccount) {
-                                action = "BUY";
-                                amount = transfer.tokenAmount.toString();
-                            }
-                            else if (transfer.fromUserAccount === mainAccount) {
-                                action = "SELL";
-                                amount = transfer.tokenAmount.toString();
-                            }
+                    let amount = "0";
+                    let realUsdVolume = 10;
+                    let realIsNewWallet = false;
+                    // Cari transfer token utama (Abaikan WSOL jika memungkinkan) yang melibatkan si feePayer
+                    let primaryTransfer = tx.tokenTransfers.find((t) => t.mint !== "So11111111111111111111111111111111111111112" &&
+                        (t.toUserAccount === mainAccount || t.fromUserAccount === mainAccount));
+                    if (!primaryTransfer) {
+                        primaryTransfer = tx.tokenTransfers.find((t) => t.toUserAccount === mainAccount || t.fromUserAccount === mainAccount);
+                    }
+                    if (primaryTransfer) {
+                        if (primaryTransfer.toUserAccount === mainAccount) {
+                            action = "BUY";
+                            amount = primaryTransfer.tokenAmount.toString();
+                            realUsdVolume = primaryTransfer.usdVolume || 10;
+                            realIsNewWallet = primaryTransfer.isNewWallet || false;
+                        }
+                        else if (primaryTransfer.fromUserAccount === mainAccount) {
+                            action = "SELL";
+                            amount = primaryTransfer.tokenAmount.toString();
+                            realUsdVolume = primaryTransfer.usdVolume || 10;
+                            realIsNewWallet = false;
                         }
                     }
                     const message = JSON.stringify({
                         type: "smart_money",
                         data: {
-                            mint,
+                            mint: address,
                             action,
                             amount,
                             walletLabel: `Wallet ...${mainAccount.substring(mainAccount.length - 4)}`,
                             txSignature: tx.signature
                         }
                     });
-                    const parsedAmount = amount === "Unknown" ? 0 : parseFloat(amount);
                     // Flow Radar Classification
-                    const flowType = this.flowClassifier.classify(mint, mainAccount, action === "BUY" ? "BUY" : "SELL", true, // isNewWallet (mocked for now)
-                    parsedAmount);
+                    const flowType = this.flowClassifier.classify(address, mainAccount, action === "BUY" ? "BUY" : "SELL", realIsNewWallet, realUsdVolume);
                     const flowMessage = JSON.stringify({
                         type: "flow_event",
                         data: {
-                            mint,
+                            mint: address,
                             type: flowType,
-                            volumeUsd: parsedAmount > 0 ? parsedAmount : 10,
+                            volumeUsd: realUsdVolume,
                             wallet: `Wallet ...${mainAccount.substring(mainAccount.length - 4)}`,
                             txSignature: tx.signature
                         }
