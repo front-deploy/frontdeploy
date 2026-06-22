@@ -699,7 +699,7 @@ function PanelHeader() {
       <div>
         <p className="text-xs font-bold uppercase text-axiom-muted">Frontdeploy</p>
         <h1 className="mt-1 pb-3 text-2xl font-bold leading-none">
-          Axiom Agent
+          Agent
         </h1>
       </div>
       <div className="pt-1">

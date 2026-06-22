@@ -5,6 +5,13 @@ import { getWalletStatus } from "../lib/popup-api"
 import { checkTokenGate } from "../lib/tokenGate"
 import { getSettings } from "../lib/storage"
 import { ChartOverlay } from "../components/ChartOverlay"
+import cssText from "data-text:../style.css"
+
+export const getStyle = () => {
+  const style = document.createElement("style")
+  style.textContent = cssText
+  return style
+}
 
 export const config: PlasmoCSConfig = {
   matches: ["https://axiom.trade/*"],

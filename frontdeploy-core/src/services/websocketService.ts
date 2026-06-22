@@ -185,13 +185,15 @@ export class WebSocketService {
             }
           });
 
+          const parsedAmount = amount === "Unknown" ? 0 : parseFloat(amount);
+          
           // Flow Radar Classification
           const flowType = this.flowClassifier.classify(
             mint, 
             mainAccount, 
             action === "BUY" ? "BUY" : "SELL", 
             true, // isNewWallet (mocked for now, or could check db)
-            100 // Mock volumeUsd, would ideally come from tx data
+            parsedAmount // using actual amount as a proxy for volume since we don't have instant pricing
           );
 
           const flowMessage = JSON.stringify({
@@ -199,7 +201,7 @@ export class WebSocketService {
             data: {
               mint,
               type: flowType,
-              volumeUsd: 100, // mock volume
+              volumeUsd: parsedAmount > 0 ? parsedAmount : 10, // fallback if 0 to show something
               wallet: `Wallet ...${mainAccount.substring(mainAccount.length - 4)}`,
               txSignature: tx.signature
             }

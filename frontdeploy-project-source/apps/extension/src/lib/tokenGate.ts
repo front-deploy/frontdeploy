@@ -5,13 +5,13 @@ import { resolveTier, type Tier } from "./holderTier";
 const FDP_MINT = process.env.PLASMO_PUBLIC_FRONTDEPLOY_CA || "2vCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump";
 
 export async function checkTokenGate(publicKeyBase58: string | undefined): Promise<{ tier: Tier; balance: number; error?: string }> {
-  if (!publicKeyBase58) {
-    return { tier: "none", balance: 0, error: "Please connect your wallet first." };
+  if (String(process.env.PLASMO_PUBLIC_DEV_BYPASS_GATING) === "true") {
+    console.info(`[TokenGate Debug] DEV BYPASS ENABLED. Automatically granting Founding tier to ${publicKeyBase58 || "unconnected wallet"}`);
+    return { tier: "founding", balance: 99999999 };
   }
 
-  if (String(process.env.PLASMO_PUBLIC_DEV_BYPASS_GATING) === "true") {
-    console.info(`[TokenGate Debug] DEV BYPASS ENABLED. Automatically granting Founding tier to ${publicKeyBase58}`);
-    return { tier: "founding", balance: 99999999 };
+  if (!publicKeyBase58) {
+    return { tier: "none", balance: 0, error: "Please connect your wallet first." };
   }
 
   try {
