@@ -77,7 +77,11 @@ export async function uploadMetadata(draft: FastLaunchDraft): Promise<string> {
     body: formData
   });
 
-  if (!res.ok) throw new Error(`Pump.fun upload failed: ${res.statusText}`);
+  if (!res.ok) {
+    const errText = await res.text().catch(() => res.statusText);
+    console.error("[Pumpfun API] IPFS upload failed:", res.status, errText);
+    throw new Error(`Pump.fun upload failed: ${errText || res.statusText}`);
+  }
   const data = await res.json();
   return data.metadataUri;
 }
@@ -117,12 +121,14 @@ export async function buildPartialSignedCreateTx(
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => response.statusText);
+    console.error("[Pumpfun API] trade-local failed:", response.status, errorText);
     throw new Error(`PumpPortal failed: ${errorText || response.statusText}`);
   }
 
   const contentType = response.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
     const errorData = await response.json().catch(() => ({}));
+    console.error("[Pumpfun API] trade-local returned JSON error:", errorData);
     throw new Error(`PumpPortal returned JSON error: ${errorData.error || errorData.message || JSON.stringify(errorData)}`);
   }
 

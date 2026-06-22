@@ -197,10 +197,14 @@ async function handleFastLaunch(draft: FastLaunchDraft, sendResponse: (res: Fron
     const provider = (statusRes.provider as any) || "phantom";
 
     // 2. Upload metadata
+    console.log("[FastLaunch] Starting uploadMetadata");
     const metadataUri = await uploadMetadata(draft);
+    console.log("[FastLaunch] uploadMetadata success, uri:", metadataUri);
 
     // 3. Build & sign with mint keypair via pumpfun trade-local api
+    console.log("[FastLaunch] Starting buildPartialSignedCreateTx");
     const { txsBase64, mintKeypair } = await buildPartialSignedCreateTx(statusRes.publicKey, metadataUri, draft);
+    console.log("[FastLaunch] buildPartialSignedCreateTx success, mint:", mintKeypair.publicKey.toBase58());
     
     // 4. Send to bridge for payer signature
     const id = Math.random().toString(36).substring(2, 15);
@@ -234,6 +238,7 @@ async function handleFastLaunch(draft: FastLaunchDraft, sendResponse: (res: Fron
     }, 180000); // 180s timeout
     
   } catch (err: any) {
+    console.error("[FastLaunch] handleFastLaunch encountered an error:", err);
     sendResponse({ success: false, error: err.message });
   }
 }

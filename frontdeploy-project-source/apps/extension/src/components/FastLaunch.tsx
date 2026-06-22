@@ -90,6 +90,7 @@ export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunch
     if (res.success && res.mint) {
       setSuccessLink(`https://pump.fun/${res.mint}`);
     } else {
+      console.error("[FastLaunch Frontend] Launch failed:", res.error);
       setError(res.error || "Failed to launch");
     }
     setLoading(false);
