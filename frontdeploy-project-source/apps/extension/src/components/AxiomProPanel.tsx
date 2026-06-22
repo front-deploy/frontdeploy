@@ -24,7 +24,7 @@ export function AxiomProPanel({ mintAddress, context }: { mintAddress: string, c
 
     async function initialize() {
       try {
-        const backendUrl = (process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL || "https://frontdeploy-production.up.railway.app").replace(/\/+$/, "")
+        const backendUrl = (process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL || "https://frontdeploy-production-15b1.up.railway.app").replace(/\/+$/, "")
         
         // 1. Fetch static risk scan
         const res = await fetch(`${backendUrl}/v1/risk/token/${mintAddress}`)
