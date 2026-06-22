@@ -188,9 +188,12 @@ export class WebSocketService {
   }
 
   public handleHeliusWebhook(events: any[]) {
+    this.app.log.info(`[handleHeliusWebhook] Received ${events?.length || 0} parsed transactions`);
     if (!Array.isArray(events)) return;
 
     for (const tx of events) {
+      this.app.log.info(`[handleHeliusWebhook] TX ${tx.signature} | tokenTransfers count: ${tx.tokenTransfers?.length || 0} | type: ${tx.type} | source: ${tx.source}`);
+      
       if (!tx.tokenTransfers || tx.tokenTransfers.length === 0) continue;
 
       const mintsInvolved = new Set<string>();
@@ -198,8 +201,11 @@ export class WebSocketService {
         mintsInvolved.add(transfer.mint);
       }
 
+      this.app.log.info(`[handleHeliusWebhook] Mints involved in tx: ${Array.from(mintsInvolved).join(', ')}`);
+
       for (const mint of mintsInvolved) {
         if (this.tokenSubscriptions.has(mint)) {
+          this.app.log.info(`[handleHeliusWebhook] Matched subscribed mint: ${mint}. Broadcasting!`);
           const clients = this.tokenSubscriptions.get(mint)!;
           
           const mainAccount = tx.feePayer || "SmartWallet";
