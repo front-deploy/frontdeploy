@@ -240,7 +240,7 @@ export function ChartOverlay({ tokenAddress, tier }: ChartOverlayProps) {
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4 text-[#EF4444]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
               <span className="font-extrabold text-sm tracking-wide">Frontdeploy</span>
-              <span className="text-[10px] font-bold text-[#52525B] uppercase tracking-widest">Wash Radar</span>
+              <span className="text-[10px] font-bold text-[#52525B] uppercase tracking-widest">$FDP Intelligence</span>
             </div>
             
             <div className="flex items-center gap-3 ml-2 text-[11px] font-medium text-[#A1A1AA]">
