@@ -101,9 +101,9 @@ export async function buildPartialSignedCreateTx(
     },
     mint: mintKeypair.publicKey.toBase58(),
     denominatedInSol: "true",
-    amount: settings.devBuySol || 0,
-    slippage: settings.slippage || 5,
-    priorityFee: settings.priorityFee || 0.0005,
+    amount: Number(settings.devBuySol || 0),
+    slippage: Number(settings.slippage || 5),
+    priorityFee: Number(settings.priorityFee || 0.0005),
     pool: "pump"
   };
 
@@ -116,7 +116,14 @@ export async function buildPartialSignedCreateTx(
   });
 
   if (!response.ok) {
-    throw new Error(`PumpPortal failed: ${response.statusText}`);
+    const errorText = await response.text().catch(() => response.statusText);
+    throw new Error(`PumpPortal failed: ${errorText || response.statusText}`);
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`PumpPortal returned JSON error: ${errorData.error || errorData.message || JSON.stringify(errorData)}`);
   }
 
   const txBytes = new Uint8Array(await response.arrayBuffer());

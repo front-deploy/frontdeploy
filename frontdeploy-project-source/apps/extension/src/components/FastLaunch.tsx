@@ -164,7 +164,7 @@ export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunch
         <button
           onClick={handleLaunch}
           disabled={loading}
-          className="mt-3 w-full py-2 rounded bg-axiom-text text-white font-medium hover:opacity-90 transition-opacity"
+          className="mt-3 w-full py-2 rounded bg-[#00E599] text-black font-medium hover:opacity-90 transition-opacity"
         >
           {loading ? "Launching..." : "Launch on pump.fun"}
         </button>
