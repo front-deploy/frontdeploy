@@ -250,6 +250,19 @@ export function ChartOverlay({ tokenAddress, tier }: ChartOverlayProps) {
           </div>
 
           <div className="flex items-center gap-3 text-[#A1A1AA] shrink-0">
+            {isManualConnect && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsManualConnect(false); // This triggers the useEffect cleanup (unsubscribe & close WS)
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                title="Disconnect Radar"
+                className="flex items-center gap-1 bg-[#EF4444]/10 text-[#EF4444] hover:bg-[#EF4444]/20 hover:text-red-400 px-2 py-0.5 rounded border border-[#EF4444]/20 shrink-0 transition-colors cursor-pointer"
+              >
+                <span className="text-[10px] font-bold uppercase tracking-wider">Disconnect</span>
+              </button>
+            )}
             <div className="flex items-center gap-1.5 bg-[#18181B] px-2 py-0.5 rounded-full border border-[#27272A] shrink-0">
               <div className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-[#00E599] shadow-[0_0_8px_#00E599]' : 'bg-[#52525B]'}`} />
               <span className="text-[10px] font-bold uppercase tracking-wider text-white">live</span>
