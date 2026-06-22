@@ -35,7 +35,7 @@
   "manifest": {
     "manifest_version": 3,
     "name": "Frontdeploy",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "description": "X-to-pump.fun launch radar for Solana trenchers.",
     "permissions": [
       "storage",
