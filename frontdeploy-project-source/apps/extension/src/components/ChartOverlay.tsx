@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react"
-import { getApiSettings } from "../lib/storage"
+import { getApiSettings, getSettings, saveSettings } from "../lib/storage"
 
 interface ChartOverlayProps {
   tokenAddress: string
@@ -19,6 +19,16 @@ export function ChartOverlay({ tokenAddress, tier }: ChartOverlayProps) {
   const [metrics, setMetrics] = useState({ organicVol: 0, loopingVol: 0, suspectVol: 0, roundTrips: 0 })
   const [isLive, setIsLive] = useState(false)
   const [isOpen, setIsOpen] = useState(true)
+
+  const handleClose = async () => {
+    try {
+      const settings = await getSettings();
+      await saveSettings({ ...settings, showFlowRadar: false });
+    } catch (e) {
+      console.warn(e);
+    }
+    setIsOpen(false);
+  }
   
   // Dragging & Resizing state
   const [position, setPosition] = useState({ x: 24, y: 24 })
@@ -217,7 +227,7 @@ export function ChartOverlay({ tokenAddress, tier }: ChartOverlayProps) {
               <div className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-[#00E599] shadow-[0_0_8px_#00E599]' : 'bg-[#52525B]'}`} />
               <span className="text-[10px] font-bold uppercase tracking-wider text-white">live</span>
             </div>
-            <button className="hover:text-white transition-colors bg-[#27272A]/50 p-1.5 rounded hover:bg-[#27272A] shrink-0" onClick={() => setIsOpen(false)} title="Close Overlay" onMouseDown={(e) => e.stopPropagation()}>
+            <button className="hover:text-white transition-colors bg-[#27272A]/50 p-1.5 rounded hover:bg-[#27272A] shrink-0" onClick={handleClose} title="Close Overlay" onMouseDown={(e) => e.stopPropagation()}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
           </div>

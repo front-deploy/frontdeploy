@@ -39,6 +39,11 @@ export function SidePanel() {
   const [intelligence, setIntelligence] = useState<AddressIntelligence | null>(null)
   const [loadingIntelligence, setLoadingIntelligence] = useState(false)
   const [savedMessage, setSavedMessage] = useState("")
+  const [settings, setSettings] = useState<OverlaySettings>({
+    overlayEnabled: true,
+    showRiskBadges: true,
+    showFlowRadar: true
+  })
 
   const [gateStatus, setGateStatus] = useState<{ tier: Tier; balance: number; error?: string } | null>(null);
   const [loadingGate, setLoadingGate] = useState(true);
@@ -78,6 +83,7 @@ export function SidePanel() {
   }, []);
 
   useEffect(() => {
+    void getSettings().then(setSettings)
     void refreshSelected()
 
     if (typeof chrome === "undefined" || !chrome.storage?.onChanged) return
@@ -88,6 +94,10 @@ export function SidePanel() {
       }
       if (changes["axiomIntelligence.selected"] || changes["axiomIntelligence.launchContext"]) {
         void refreshSelected()
+      }
+      if (changes["axiomIntelligence.settings"]) {
+        const newSettings = changes["axiomIntelligence.settings"].newValue
+        if (newSettings) setSettings(newSettings)
       }
     }
 
@@ -207,6 +217,19 @@ export function SidePanel() {
 
         {activeTab === "axiom" ? (
           <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden p-4">
+            <div className="flex items-center justify-between gap-3 rounded-sm border border-axiom-border bg-axiom-panel p-3 mb-4">
+              <span className="text-sm font-bold">Frontdeploy Flow Radar</span>
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-axiom-accent cursor-pointer"
+                checked={settings.showFlowRadar}
+                onChange={async (event) => {
+                  const newSettings = { ...settings, showFlowRadar: event.target.checked }
+                  setSettings(newSettings)
+                  await saveSettings(newSettings)
+                }}
+              />
+            </div>
             {!hasAccess(gateStatus?.tier || "none", "axiomOverlay") ? (
               <div className="p-6 text-center mt-8">
                 <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">
@@ -318,6 +341,19 @@ export function SidePanel() {
 
       {activeTab === "axiom" ? (
         <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden p-4">
+          <div className="flex items-center justify-between gap-3 rounded-sm border border-axiom-border bg-axiom-panel p-3 mb-4">
+            <span className="text-sm font-bold">Frontdeploy Flow Radar</span>
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-axiom-accent cursor-pointer"
+              checked={settings.showFlowRadar}
+              onChange={async (event) => {
+                const newSettings = { ...settings, showFlowRadar: event.target.checked }
+                setSettings(newSettings)
+                await saveSettings(newSettings)
+              }}
+            />
+          </div>
           {!hasAccess(gateStatus?.tier || "none", "axiomOverlay") ? (
             <div className="p-6 text-center mt-8">
               <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">

@@ -112,7 +112,7 @@ export class WebSocketService {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             webhookURL: webhookUrl,
-            transactionTypes: ["SWAP", "TRANSFER"],
+            transactionTypes: ["ANY"],
             accountAddresses: mints,
             webhookType: "enhanced"
           })
@@ -129,7 +129,7 @@ export class WebSocketService {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             webhookURL: webhookUrl,
-            transactionTypes: ["SWAP", "TRANSFER"],
+            transactionTypes: ["ANY"],
             accountAddresses: mints.length > 0 ? mints : ["11111111111111111111111111111111"], // Helius requires at least 1 address
             webhookType: "enhanced"
           })
