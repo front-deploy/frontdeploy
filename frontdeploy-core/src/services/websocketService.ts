@@ -142,8 +142,8 @@ export class WebSocketService {
   private handleMintLog(signature: string) {
     this.pendingSignatures.add(signature);
     if (!this.batchTimer) {
-      // Wait 1 second before processing the batch natively
-      this.batchTimer = setTimeout(() => this.processSignatureBatchNative(), 1000);
+      // Wait 2 seconds to ensure the RPC node has fully indexed the confirmed block
+      this.batchTimer = setTimeout(() => this.processSignatureBatchNative(), 2000);
     }
   }
 
@@ -151,8 +151,8 @@ export class WebSocketService {
     this.batchTimer = null;
     if (this.pendingSignatures.size === 0) return;
 
-    // getParsedTransactions can fetch up to 250 signatures at once
-    const signatures = Array.from(this.pendingSignatures).slice(0, 50);
+    // getParsedTransactions can fetch up to 250 signatures at once, but we use 25 to avoid RPC timeouts or massive payloads
+    const signatures = Array.from(this.pendingSignatures).slice(0, 25);
     for (const sig of signatures) {
       this.pendingSignatures.delete(sig);
     }
@@ -238,7 +238,7 @@ export class WebSocketService {
     }
 
     if (this.pendingSignatures.size > 0) {
-      this.batchTimer = setTimeout(() => this.processSignatureBatchNative(), 1000);
+      this.batchTimer = setTimeout(() => this.processSignatureBatchNative(), 2000);
     }
   }
 
