@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { WebSocket } from '@fastify/websocket';
 import { PrismaClient } from '@prisma/client';
+import { FlowClassifier } from './flowClassifier.js';
 
 const prisma = new PrismaClient();
 
@@ -18,6 +19,7 @@ export interface KolEventPayload {
 export class WebSocketService {
   private connections: Set<WebSocket> = new Set();
   private tokenSubscriptions: Map<string, Set<WebSocket>> = new Map();
+  private flowClassifier: FlowClassifier = new FlowClassifier();
 
   constructor(private app: FastifyInstance) {}
 
@@ -183,9 +185,30 @@ export class WebSocketService {
             }
           });
 
+          // Flow Radar Classification
+          const flowType = this.flowClassifier.classify(
+            mint, 
+            mainAccount, 
+            action === "BUY" ? "BUY" : "SELL", 
+            true, // isNewWallet (mocked for now, or could check db)
+            100 // Mock volumeUsd, would ideally come from tx data
+          );
+
+          const flowMessage = JSON.stringify({
+            type: "flow_event",
+            data: {
+              mint,
+              type: flowType,
+              volumeUsd: 100, // mock volume
+              wallet: `Wallet ...${mainAccount.substring(mainAccount.length - 4)}`,
+              txSignature: tx.signature
+            }
+          });
+
           for (const client of clients) {
             if (client.readyState === 1 /* OPEN */) {
               client.send(message);
+              client.send(flowMessage); // Also send flow event to subscribed clients
             }
           }
         }
@@ -195,6 +218,15 @@ export class WebSocketService {
 
   public broadcastEvent(event: KolEventPayload) {
     const payload = JSON.stringify({ type: 'kol_event', data: event });
+    for (const connection of this.connections) {
+      if (connection.readyState === 1) { // WebSocket.OPEN
+        connection.send(payload);
+      }
+    }
+  }
+
+  public broadcastRaw(event: any) {
+    const payload = JSON.stringify(event);
     for (const connection of this.connections) {
       if (connection.readyState === 1) { // WebSocket.OPEN
         connection.send(payload);

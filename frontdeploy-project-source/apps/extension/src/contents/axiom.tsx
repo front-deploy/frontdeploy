@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { saveSelectedAddress } from "../lib/storage"
 import { getWalletStatus } from "../lib/popup-api"
 import { checkTokenGate } from "../lib/tokenGate"
+import { getSettings } from "../lib/storage"
 import { ChartOverlay } from "../components/ChartOverlay"
 
 export const config: PlasmoCSConfig = {
@@ -14,6 +15,25 @@ export const config: PlasmoCSConfig = {
 export default function AxiomCSUI() {
   const [activeToken, setActiveToken] = useState<string | null>(null)
   const [tier, setTier] = useState<"none" | "base" | "plus" | "founding">("none")
+  const [showFlowRadar, setShowFlowRadar] = useState(true)
+
+  useEffect(() => {
+    getSettings().then(settings => {
+      setShowFlowRadar(settings.showFlowRadar !== false)
+    })
+    
+    // Listen to changes in local storage from the popup
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName === "local" && changes["axiomIntelligence.settings"]) {
+        const newSettings = changes["axiomIntelligence.settings"].newValue
+        if (newSettings && typeof newSettings.showFlowRadar === "boolean") {
+          setShowFlowRadar(newSettings.showFlowRadar)
+        }
+      }
+    }
+    chrome.storage.onChanged.addListener(handleStorageChange)
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange)
+  }, [])
 
   useEffect(() => {
     let lastUrl = window.location.href
@@ -104,6 +124,11 @@ export default function AxiomCSUI() {
     return () => clearInterval(interval)
   }, [activeToken])
 
-  return <div style={{ display: 'none' }} data-axiom-csui="active" data-active-token={activeToken || ""} />
+  return (
+    <>
+      <div style={{ display: 'none' }} data-axiom-csui="active" data-active-token={activeToken || ""} />
+      {showFlowRadar && activeToken && <ChartOverlay tokenAddress={activeToken} tier={tier} />}
+    </>
+  )
 }
 

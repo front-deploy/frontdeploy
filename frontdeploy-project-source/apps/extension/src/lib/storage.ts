@@ -6,6 +6,7 @@ import { hasExtensionContext, isContextInvalidated } from "./extensionContext"
 export interface OverlaySettings {
   overlayEnabled: boolean
   showRiskBadges: boolean
+  showFlowRadar: boolean
 }
 
 export interface ApiSettings {
@@ -44,7 +45,8 @@ export interface LaunchSettings {
 
 const DEFAULT_SETTINGS: OverlaySettings = {
   overlayEnabled: true,
-  showRiskBadges: true
+  showRiskBadges: true,
+  showFlowRadar: true
 }
 
 const DEFAULT_API_SETTINGS: ApiSettings = {

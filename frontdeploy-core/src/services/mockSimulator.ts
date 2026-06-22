@@ -44,6 +44,28 @@ export class MockSimulatorService {
       this.wsService.broadcastEvent(mockEvent);
 
     }, intervalMs);
+
+    // Simulate Flow Radar events
+    setInterval(() => {
+      const types = ['organic', 'organic', 'organic', 'organic', 'organic', 'suspect', 'looping', 'looping'];
+      const flowType = types[Math.floor(Math.random() * types.length)];
+      const mint = this.mockCAs[Math.floor(Math.random() * this.mockCAs.length)]!;
+      const wallet = 'Wallet...' + Math.random().toString(36).substring(2, 6);
+      
+      const flowEvent = {
+        type: 'flow_event',
+        data: {
+          mint,
+          type: flowType,
+          volumeUsd: Math.floor(Math.random() * 5000),
+          wallet,
+          txSignature: Math.random().toString(36).substring(2, 15)
+        }
+      };
+
+      this.logger.info(`[MOCK] Emitting flow_event for ${mint}: ${flowType}`);
+      this.wsService.broadcastRaw(flowEvent);
+    }, 2000); // Emits a mock flow event every 2 seconds
   }
 
   public stop() {

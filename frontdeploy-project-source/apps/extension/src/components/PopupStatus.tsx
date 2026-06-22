@@ -14,7 +14,8 @@ export function PopupStatus() {
   const [tab, setTab] = useState<"settings" | "launch">("launch")
   const [settings, setSettings] = useState<OverlaySettings>({
     overlayEnabled: true,
-    showRiskBadges: true
+    showRiskBadges: true,
+    showFlowRadar: true
   })
   const [apiSettings, setApiSettings] = useState<ApiSettings>({
     liveDataEnabled: true,
@@ -86,6 +87,13 @@ export function PopupStatus() {
           enabled={settings.showRiskBadges}
           onChange={(showRiskBadges) =>
             void updateSetting({ ...settings, showRiskBadges })
+          }
+        />
+        <ToggleRow
+          label="Show Axiom Flow Radar"
+          enabled={settings.showFlowRadar}
+          onChange={(showFlowRadar) =>
+            void updateSetting({ ...settings, showFlowRadar })
           }
         />
         <ToggleRow
