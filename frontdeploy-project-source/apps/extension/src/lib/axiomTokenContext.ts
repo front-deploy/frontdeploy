@@ -166,7 +166,17 @@ function isLikelyProjectWebsite(url: string): boolean {
       "solscan.io",
       "birdeye.so",
       "dexscreener.com",
-      "pump.fun"
+      "pump.fun",
+      "photon-sol.tinyastro.io",
+      "photon-sol.tv",
+      "bullx.io",
+      "neo.bullx.io",
+      "raydium.io",
+      "jup.ag",
+      "geckoterminal.com",
+      "dextools.io",
+      "gmgn.ai",
+      "rugcheck.xyz"
     ].some((blocked) => hostname === blocked || hostname.endsWith(`.${blocked}`))
   } catch {
     return false

@@ -64,18 +64,22 @@ export function DeveloperReputationPanel({
     let isActive = true;
     let wsRef: WebSocket | null = null;
 
+    // If the context contains a pump.fun URL, extract the true token mint from it.
+    // We pass BOTH the Axiom address (which might be a pair address) AND the pump.fun mint
+    // so the backend can accept either of them as a valid "CA POSTED" match.
+    let validMints = new Set<string>();
+    if (tokenAddress) validMints.add(tokenAddress);
+    if (context?.address) validMints.add(context.address);
+    if (context?.pumpFunUrl) {
+      const match = context.pumpFunUrl.match(/pump\.fun\/(?:coin\/)?([1-9A-HJ-NP-Za-km-z]{32,44})/);
+      if (match && match[1]) {
+        validMints.add(match[1]);
+      }
+    }
+    let mintToVerify = Array.from(validMints).join(',');
+
     getApiSettings().then(settings => {
       if (!isActive) return;
-
-      // If the context contains a pump.fun URL, extract the true token mint from it.
-      // Otherwise fallback to the tokenAddress (which might just be a pair address on Axiom).
-      let mintToVerify = tokenAddress;
-      if (context?.pumpFunUrl) {
-        const match = context.pumpFunUrl.match(/pump\.fun\/(?:coin\/)?([1-9A-HJ-NP-Za-km-z]{32,44})/);
-        if (match && match[1]) {
-          mintToVerify = match[1];
-        }
-      }
 
       const wsUrl = settings.backendUrl.replace(/^http/, 'ws') + '/ws/kol-alerts';
       const ws = new WebSocket(wsUrl);
@@ -104,7 +108,7 @@ export function DeveloperReputationPanel({
     return () => {
       isActive = false;
       if (wsRef && wsRef.readyState === WebSocket.OPEN) {
-        wsRef.send(JSON.stringify({ action: "unsubscribe_ca_verify", mint: tokenAddress }));
+        wsRef.send(JSON.stringify({ action: "unsubscribe_ca_verify", mint: mintToVerify }));
         wsRef.close();
       }
     };
@@ -186,7 +190,7 @@ export function DeveloperReputationPanel({
 
         return caVerifyStatus ? (
           <div className="mt-3 flex items-center justify-between rounded-sm border border-axiom-border bg-axiom-bg p-2 text-xs" title={`Last checked: ${caVerifyStatus.checkedAt ? new Date(caVerifyStatus.checkedAt).toLocaleTimeString() : ""}`}>
-            <span className="font-bold text-axiom-text">Source CA Verified</span>
+            <span className="font-bold text-axiom-text">Website CA Check</span>
             <span className={`px-2 py-1 rounded font-bold uppercase ${getBadgeColor(caVerifyStatus.state)}`}>
               {caVerifyStatus.state}
             </span>

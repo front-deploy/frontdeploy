@@ -64,7 +64,17 @@ export class CaVerifierService {
       
       // Simple exact match for the mint string in the HTML source
       // This covers text, hrefs (e.g. pump.fun/mint, solscan), etc.
-      if (html.includes(mint)) {
+      const validMints = mint.split(',').map(m => m.trim()).filter(m => m.length > 0);
+      
+      let foundValid = false;
+      for (const m of validMints) {
+        if (html.includes(m)) {
+          foundValid = true;
+          break;
+        }
+      }
+
+      if (foundValid) {
         result.state = "CA POSTED";
         result.location = "Found in HTML";
       } else {
@@ -73,7 +83,8 @@ export class CaVerifierService {
         let match;
         let foundOtherCa = false;
         while ((match = otherCaRegex.exec(html)) !== null) {
-          if (match[1] !== mint) {
+          const matchedCa = match[1];
+          if (matchedCa && !validMints.includes(matchedCa)) {
             foundOtherCa = true;
             break;
           }
