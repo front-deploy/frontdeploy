@@ -117,7 +117,11 @@ export class WebSocketService {
         const id = this.solanaConnection.onLogs(
           pubkey,
           (logs) => {
-            if (logs.err) return; // Skip failed transactions
+            this.app.log.info(`[Solana WebSocket] Log received for ${mint}. Signature: ${logs.signature}`);
+            if (logs.err) {
+              this.app.log.info(`[Solana WebSocket] Skipping failed tx: ${logs.signature}`);
+              return; // Skip failed transactions
+            }
             this.handleMintLog(logs.signature);
           },
           'confirmed'
@@ -164,6 +168,8 @@ export class WebSocketService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transactions: signatures })
       });
+      
+      this.app.log.info(`[Helius REST] Fetched ${signatures.length} parsed txs from Helius. Status: ${res.status}`);
       
       if (res.ok) {
         const events = await res.json() as any[];
