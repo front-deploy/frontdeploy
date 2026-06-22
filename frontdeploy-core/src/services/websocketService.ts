@@ -219,6 +219,9 @@ export class WebSocketService {
     if (!Array.isArray(events)) return;
 
     for (const tx of events) {
+      // Debug log ALL received transactions to check if Helius is missing tokenTransfers
+      this.app.log.info(`[Helius Webhook] Processing tx: ${tx.signature}. tokenTransfers count: ${tx.tokenTransfers?.length || 0}`);
+
       if (!tx.tokenTransfers || tx.tokenTransfers.length === 0) continue;
 
       const mintsInvolved = new Set<string>();
