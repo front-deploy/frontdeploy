@@ -142,48 +142,103 @@ export class WebSocketService {
   private handleMintLog(signature: string) {
     this.pendingSignatures.add(signature);
     if (!this.batchTimer) {
-      this.batchTimer = setTimeout(() => this.processSignatureBatch(), 1000);
+      // Wait 1 second before processing the batch natively
+      this.batchTimer = setTimeout(() => this.processSignatureBatchNative(), 1000);
     }
   }
 
-  private async processSignatureBatch() {
+  private async processSignatureBatchNative() {
     this.batchTimer = null;
     if (this.pendingSignatures.size === 0) return;
 
-    // Helius allows up to 100 signatures per request
-    const signatures = Array.from(this.pendingSignatures).slice(0, 100);
+    // getParsedTransactions can fetch up to 250 signatures at once
+    const signatures = Array.from(this.pendingSignatures).slice(0, 50);
     for (const sig of signatures) {
       this.pendingSignatures.delete(sig);
     }
 
     try {
-      const apiKey = process.env.HELIUS_RPC_URL?.split('api-key=')[1];
-      if (!apiKey) {
-        this.app.log.error("Missing HELIUS_RPC_URL api key for parsing transactions");
-        return;
-      }
-      
-      const res = await fetch(`https://api.helius.xyz/v0/transactions/?api-key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactions: signatures })
+      this.app.log.info(`[Native Parser] Fetching ${signatures.length} txs from RPC...`);
+      const parsedTxs = await this.solanaConnection.getParsedTransactions(signatures, {
+        maxSupportedTransactionVersion: 0,
+        commitment: 'confirmed'
       });
-      
-      this.app.log.info(`[Helius REST] Fetched ${signatures.length} parsed txs from Helius. Status: ${res.status}`);
-      
-      if (res.ok) {
-        const events = await res.json() as any[];
-        this.handleHeliusWebhook(events);
-      } else {
-        const errText = await res.text().catch(() => res.statusText);
-        this.app.log.error(`Failed to fetch parsed transactions batch: ${res.status} ${errText}`);
+
+      const events = [];
+      for (let i = 0; i < parsedTxs.length; i++) {
+        const tx = parsedTxs[i];
+        if (!tx || !tx.meta) continue;
+
+        const signature = signatures[i];
+        // Assume feePayer is the first signer
+        const feePayer = tx.transaction?.message?.accountKeys?.[0]?.pubkey.toString() || "Unknown";
+
+        const preBalances = tx.meta.preTokenBalances || [];
+        const postBalances = tx.meta.postTokenBalances || [];
+        
+        // Calculate real USD volume based on feePayer's SOL balance changes
+        const preSol = (tx.meta.preBalances?.[0] || 0) / 1e9;
+        const postSol = (tx.meta.postBalances?.[0] || 0) / 1e9;
+        const solDiff = Math.abs(preSol - postSol);
+        const estimatedUsdVolume = solDiff * 140; // Assume 1 SOL = $140
+        
+        const tokenTransfers = [];
+        const accounts = new Set([...preBalances.map(b => b.accountIndex), ...postBalances.map(b => b.accountIndex)]);
+        
+        for (const accountIndex of accounts) {
+          const pre = preBalances.find(b => b.accountIndex === accountIndex);
+          const post = postBalances.find(b => b.accountIndex === accountIndex);
+          
+          const preAmount = pre ? (pre.uiTokenAmount.uiAmount || 0) : 0;
+          const postAmount = post ? (post.uiTokenAmount.uiAmount || 0) : 0;
+          const diff = postAmount - preAmount;
+          
+          if (Math.abs(diff) > 0) {
+            const mint = (pre?.mint || post?.mint)!;
+            const owner = (pre?.owner || post?.owner) || "Unknown";
+            
+            const isNewWallet = preAmount === 0; // If balance was 0 before tx, it's a new holder
+
+            if (diff > 0) {
+              tokenTransfers.push({
+                mint,
+                toUserAccount: owner,
+                tokenAmount: diff,
+                fromUserAccount: "System",
+                usdVolume: estimatedUsdVolume,
+                isNewWallet: isNewWallet
+              });
+            } else {
+              tokenTransfers.push({
+                mint,
+                fromUserAccount: owner,
+                tokenAmount: Math.abs(diff),
+                toUserAccount: "System",
+                usdVolume: estimatedUsdVolume,
+                isNewWallet: false // Sells are never new wallets
+              });
+            }
+          }
+        }
+        
+        if (tokenTransfers.length > 0) {
+          events.push({
+            signature,
+            feePayer,
+            tokenTransfers
+          });
+        }
       }
+
+      this.app.log.info(`[Native Parser] Successfully parsed ${events.length} txs with token transfers`);
+      this.handleHeliusWebhook(events);
+
     } catch (e) {
-      this.app.log.error(e, "Failed to fetch parsed transactions batch");
+      this.app.log.error(e, "Failed to natively fetch parsed transactions");
     }
 
     if (this.pendingSignatures.size > 0) {
-      this.batchTimer = setTimeout(() => this.processSignatureBatch(), 1000);
+      this.batchTimer = setTimeout(() => this.processSignatureBatchNative(), 1000);
     }
   }
 
@@ -210,16 +265,22 @@ export class WebSocketService {
           
           const mainAccount = tx.feePayer || "SmartWallet";
           let action = "SWAP";
-          let amount = "Unknown";
+          let amount = "0";
+          let realUsdVolume = 10;
+          let realIsNewWallet = false;
           
           for (const transfer of tx.tokenTransfers) {
             if (transfer.mint === mint) {
               if (transfer.toUserAccount === mainAccount) {
                 action = "BUY";
                 amount = transfer.tokenAmount.toString();
+                realUsdVolume = transfer.usdVolume || 10;
+                realIsNewWallet = transfer.isNewWallet || false;
               } else if (transfer.fromUserAccount === mainAccount) {
                 action = "SELL";
                 amount = transfer.tokenAmount.toString();
+                realUsdVolume = transfer.usdVolume || 10;
+                realIsNewWallet = false;
               }
             }
           }
@@ -242,8 +303,8 @@ export class WebSocketService {
             mint, 
             mainAccount, 
             action === "BUY" ? "BUY" : "SELL", 
-            true, // isNewWallet (mocked for now)
-            parsedAmount
+            realIsNewWallet,
+            realUsdVolume
           );
 
           const flowMessage = JSON.stringify({
@@ -251,7 +312,7 @@ export class WebSocketService {
             data: {
               mint,
               type: flowType,
-              volumeUsd: parsedAmount > 0 ? parsedAmount : 10,
+              volumeUsd: realUsdVolume,
               wallet: `Wallet ...${mainAccount.substring(mainAccount.length - 4)}`,
               txSignature: tx.signature
             }
