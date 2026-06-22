@@ -12,6 +12,8 @@ export class IngestionPipeline {
     globalSinceId = undefined;
     // Fallback memory deduper in case sinceId is ignored by the provider
     processedTweetIds = new Set();
+    // Track category of handles for the payload
+    handleCategories = new Map();
     constructor(source, wsService, logger, pollIntervalMs = 10000) {
         this.source = source;
         this.wsService = wsService;
@@ -44,7 +46,12 @@ export class IngestionPipeline {
             if (watchlist.length === 0) {
                 return; // Nothing to do
             }
-            const accounts = watchlist.map((item) => item.handle);
+            const accounts = watchlist.map((item) => {
+                if (item.category) {
+                    this.handleCategories.set(item.handle.toLowerCase(), item.category);
+                }
+                return item.handle;
+            });
             // 2. Poll Source
             if (this.wsService.getConnectionsCount() === 0) {
                 return; // Skip polling if no one is viewing the KOL Live feed
@@ -84,6 +91,7 @@ export class IngestionPipeline {
         const tickerRegex = /\$[A-Za-z0-9]+/g;
         const tickers = tweet.text.match(tickerRegex);
         const isSignal = (cas !== null && cas.length > 0) || (tickers !== null && tickers.length > 0);
+        const category = this.handleCategories.get(tweet.authorHandle.toLowerCase()) || 'kol';
         const payload = {
             tweetId: tweet.id,
             authorHandle: tweet.authorHandle,
@@ -92,6 +100,7 @@ export class IngestionPipeline {
             isSignal,
             contractAddress: cas ? cas[0] : null,
             ticker: tickers ? tickers[0] : null,
+            category,
             postedAt: tweet.ts
         };
         // Push to connected extensions
@@ -107,6 +116,7 @@ export class IngestionPipeline {
                 isSignal: payload.isSignal,
                 contractAddress: payload.contractAddress ?? null,
                 ticker: payload.ticker ?? null,
+                category: payload.category ?? null,
                 postedAt: payload.postedAt,
             }
         }).catch((err) => {

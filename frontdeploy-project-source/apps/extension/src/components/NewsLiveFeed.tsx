@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export function KolLiveFeed() {
+export function NewsLiveFeed() {
   const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export function KolLiveFeed() {
           const data = JSON.parse(event.data);
           if (data.type === "kol_event") {
             const evtData = data.data;
-            if (evtData.category === "news") return;
+            if (evtData.category !== "news") return;
             setEvents(prev => {
               if (prev.some(e => e.tweetId === evtData.tweetId)) return prev;
               const newEvents = [evtData, ...prev];
@@ -72,7 +72,7 @@ export function KolLiveFeed() {
   return (
     <div className="flex flex-col gap-3 p-4">
       <div className="flex items-center justify-between pb-2 border-b border-axiom-border/10">
-        <h2 className="text-sm font-semibold text-axiom-text">KOL Live Feed</h2>
+        <h2 className="text-sm font-semibold text-axiom-text">Live News Feed</h2>
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-axiom-good animate-pulse shadow-[0_0_8px_rgba(11,122,59,0.6)]" />
           <span className="text-xs text-axiom-muted">Listening...</span>
@@ -107,6 +107,24 @@ export function KolLiveFeed() {
                 {evt.text}
               </p>
               
+              {/* Narrative Tags */}
+              <div className="flex flex-wrap gap-1 mt-2">
+                {(() => {
+                  const txt = evt.text.toLowerCase();
+                  const tags = [];
+                  if (txt.includes('iran') || txt.includes('war') || txt.includes('geopolitics') || txt.includes('russia') || txt.includes('israel')) tags.push('Geopolitics');
+                  if (txt.includes('ai') || txt.includes('gpt') || txt.includes('claude') || txt.includes('openai') || txt.includes('anthropic')) tags.push('AI');
+                  if (txt.includes('etf') || txt.includes('sec') || txt.includes('regulation') || txt.includes('gensler')) tags.push('Regulation');
+                  if (txt.includes('pump.fun') || txt.includes('pumpdotfun')) tags.push('Pump.fun');
+                  
+                  return tags.map(tag => (
+                    <span key={tag} className="px-1.5 py-0.5 rounded bg-axiom-accent/20 text-axiom-accent text-[9px] font-bold uppercase tracking-wider">
+                      {tag}
+                    </span>
+                  ));
+                })()}
+              </div>
+
               <div className="flex items-center gap-2 mt-2 pt-2 border-t border-axiom-border/10">
                 {evt.ticker && (
                   <span className="px-1.5 py-0.5 rounded bg-axiom-warn/20 text-axiom-warn text-[10px] font-bold">
@@ -118,32 +136,34 @@ export function KolLiveFeed() {
                     {evt.contractAddress}
                   </span>
                 )}
-                <button
-                  onClick={() => {
-                    if (typeof chrome !== "undefined" && chrome.storage) {
-                      chrome.storage.local.set({
-                        "axiomIntelligence.launchContext": {
-                          id: evt.tweetId,
-                          text: evt.text,
-                          url: evt.url,
-                          handle: evt.authorHandle,
-                          influence: "major",
-                          ticker: evt.ticker || evt.contractAddress || ""
-                        },
-                        kolDeployTrigger: Date.now()
-                      });
-                    }
-                  }}
-                  className="ml-auto px-3 py-1 bg-black text-white border border-axiom-border text-xs font-semibold rounded hover:bg-black/80 transition-colors"
-                >
-                  Deploy
-                </button>
+                {(evt.ticker || evt.contractAddress) && (
+                  <button
+                    onClick={() => {
+                      if (typeof chrome !== "undefined" && chrome.storage) {
+                        chrome.storage.local.set({
+                          "axiomIntelligence.launchContext": {
+                            id: evt.tweetId,
+                            text: evt.text,
+                            url: evt.url,
+                            handle: evt.authorHandle,
+                            influence: "major",
+                            ticker: evt.ticker || evt.contractAddress || ""
+                          },
+                          kolDeployTrigger: Date.now()
+                        });
+                      }
+                    }}
+                    className="ml-auto px-3 py-1 bg-black text-white border border-axiom-border text-xs font-semibold rounded hover:bg-black/80 transition-colors"
+                  >
+                    Deploy
+                  </button>
+                )}
               </div>
             </div>
           ))
         ) : (
           <div className="text-center py-10 text-axiom-muted text-xs">
-            No events detected yet. Waiting for KOLs to post...
+            No news detected yet. Waiting for breaking news...
           </div>
         )}
       </div>

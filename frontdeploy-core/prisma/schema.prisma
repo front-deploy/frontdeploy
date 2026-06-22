@@ -20,6 +20,7 @@ model Watchlist {
   handle    String   @unique
   userId    String   @unique // Numeric string ID from X
   tier      String   // "A", "B", "C", "D"
+  category  String?  @default("kol") // "kol", "news"
   enabled   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -37,6 +38,7 @@ model KolEvent {
   isSignal        Boolean  @default(false)
   contractAddress String?
   ticker          String?
+  category        String?  @default("kol")
   postedAt        DateTime
   createdAt       DateTime @default(now())
 

@@ -15,6 +15,7 @@ export interface KolEventPayload {
   isSignal: boolean;
   contractAddress?: string | null;
   ticker?: string | null;
+  category?: string;
   postedAt: string | Date;
 }
 

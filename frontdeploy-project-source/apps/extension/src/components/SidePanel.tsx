@@ -22,13 +22,14 @@ import {
 import { DeveloperReputationPanel } from "./DeveloperReputationPanel"
 import { LaunchPanel } from "./LaunchPanel"
 import { KolLiveFeed } from "./KolLiveFeed"
+import { NewsLiveFeed } from "./NewsLiveFeed"
 import { WalletButton } from "./WalletButton"
 import { AxiomProPanel } from "./AxiomProPanel"
 import { getSettings, saveSettings, type OverlaySettings } from "../lib/storage"
 import { type Tier, hasAccess } from "../lib/holderTier"
 
 export function SidePanel() {
-  const [activeTab, setActiveTab] = useState<"radar" | "kol" | "axiom">("kol")
+  const [activeTab, setActiveTab] = useState<"radar" | "kol" | "news" | "axiom">("kol")
   const [selected, setSelected] = useState<SelectedAddress | null>(null)
   const [launchContext, setLaunchContext] = useState<XReplyContext | null>(null)
   const [copied, setCopied] = useState("")
@@ -208,6 +209,12 @@ export function SidePanel() {
             KOL Live
           </button>
           <button 
+            onClick={() => setActiveTab("news")}
+            className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'news' ? 'text-axiom-text border-axiom-text' : 'text-axiom-muted border-transparent hover:text-axiom-text/80'}`}
+          >
+            News
+          </button>
+          <button 
             onClick={() => setActiveTab("axiom")}
             className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'axiom' ? 'text-axiom-text border-axiom-text' : 'text-axiom-muted border-transparent hover:text-axiom-text/80'}`}
           >
@@ -282,6 +289,22 @@ export function SidePanel() {
               <KolLiveFeed />
             )}
           </div>
+        ) : activeTab === "news" ? (
+          <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden">
+            {!hasAccess(gateStatus?.tier || "none", "kolAlerts") ? (
+              <div className="p-6 text-center mt-8">
+                <svg viewBox="0 0 24 24" fill="none" className="w-12 h-12 mx-auto text-axiom-muted mb-4">
+                  <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
+                <p className="mt-2 text-sm text-axiom-muted">
+                  {gateStatus?.error || "Hold 2,500,000 $FDP (Base Tier) to unlock Live News Feed."}
+                </p>
+              </div>
+            ) : (
+              <NewsLiveFeed />
+            )}
+          </div>
         ) : (
           <>
             <div className="-mx-4 border-b border-axiom-border pb-4 mb-4">
@@ -330,6 +353,12 @@ export function SidePanel() {
           className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'kol' ? 'text-axiom-text border-axiom-text' : 'text-axiom-muted border-transparent hover:text-axiom-text/80'}`}
         >
           KOL Live
+        </button>
+        <button 
+          onClick={() => setActiveTab("news")}
+          className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'news' ? 'text-axiom-text border-axiom-text' : 'text-axiom-muted border-transparent hover:text-axiom-text/80'}`}
+        >
+          News
         </button>
         <button 
           onClick={() => setActiveTab("axiom")}

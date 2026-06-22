@@ -10,6 +10,7 @@ export declare class IngestionPipeline {
     private intervalId;
     private globalSinceId;
     private processedTweetIds;
+    private handleCategories;
     constructor(source: TweetSource, wsService: WebSocketService, logger: FastifyBaseLogger, pollIntervalMs?: number);
     start(): Promise<void>;
     stop(): void;

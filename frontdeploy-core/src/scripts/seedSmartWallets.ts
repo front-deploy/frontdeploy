@@ -10,6 +10,19 @@ const SMART_WALLETS = [
   { handle: 'DeFi_Chad', category: 'tier-A' },
   { handle: 'Meme_Sniper', category: 'sniper' },
   { handle: 'Sol_Maxi', category: 'whale' },
+  // News Accounts
+  { handle: 'AnthropicAI', category: 'news' },
+  { handle: 'claudeai', category: 'news' },
+  { handle: 'OpenAI', category: 'news' },
+  { handle: 'sama', category: 'news' },
+  { handle: 'elonmusk', category: 'news' },
+  { handle: 'aeyakovenko', category: 'news' },
+  { handle: 'rajgokal', category: 'news' },
+  { handle: 'a1lon9', category: 'news' },
+  { handle: 'pumpdotfun', category: 'news' },
+  { handle: 'WatcherGuru', category: 'news' },
+  { handle: 'MarioNawfal', category: 'news' },
+  { handle: 'zerohedge', category: 'news' },
 ];
 
 async function main() {
