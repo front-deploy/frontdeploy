@@ -45,6 +45,22 @@ export class WebSocketService {
       this.app.log.info('New client connected to KOL alerts stream');
       this.connections.add(connection);
 
+      // Send recent historical events immediately
+      prisma.kolEvent.findMany({
+        orderBy: { postedAt: 'desc' },
+        take: 50
+      }).then(events => {
+        const sorted = events.reverse();
+        for (const event of sorted) {
+          connection.send(JSON.stringify({
+            type: 'kol_event',
+            data: event
+          }));
+        }
+      }).catch(err => {
+        this.app.log.error('Failed to fetch historical events for WS', err);
+      });
+
       connection.on('message', (message: string) => {
         try {
           const payload = JSON.parse(message.toString());

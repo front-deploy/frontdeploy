@@ -13,6 +13,7 @@ import {
 } from "../lib/xLaunchContext"
 import { saveSelectedLaunchContext } from "../lib/storage"
 import { checkTokenGate } from "../lib/tokenGate"
+import { hasAccess } from "../lib/holderTier"
 import { getWalletStatus } from "../lib/popup-api"
 import { WalletButton } from "../components/XWalletButton"
 import { FastLaunch } from "../components/XFastLaunch"
@@ -265,7 +266,7 @@ async function fetchWatchlist() {
       const handles = new Set<string>();
       list.forEach((item: any) => {
         // Strip @ if present
-        handles.add(item.xHandle.replace(/^@/, '').toLowerCase());
+        handles.add(item.handle.replace(/^@/, '').toLowerCase());
       });
       window.__AXIOM_WATCHLIST_HANDLES__ = handles;
     }
@@ -291,7 +292,6 @@ function startWhenReady() {
       // KOL Live features (like the in-feed tracked badge) are PRO features.
       const session = await getWalletStatus()
       const gate = await checkTokenGate(session?.publicKey)
-      const { hasAccess } = await import("../lib/holderTier")
       if (hasAccess(gate.tier, "kolAlerts")) {
         await fetchWatchlist()
       } else {
