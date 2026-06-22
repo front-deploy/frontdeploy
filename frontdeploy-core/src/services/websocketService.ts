@@ -124,7 +124,18 @@ export class WebSocketService {
   private webhookId: string | null = null;
   private async updateHeliusWebhook() {
     const mints = Array.from(this.tokenSubscriptions.keys());
-    if (mints.length === 0 && !this.webhookId) return; // Nothing to do
+    if (mints.length === 0) {
+      // If no one is subscribed, delete the webhook to save Helius quota
+      if (this.webhookId) {
+        const apiKey = process.env.HELIUS_RPC_URL?.split('api-key=')[1];
+        if (apiKey) {
+          await fetch(`https://api.helius.xyz/v0/webhooks/${this.webhookId}?api-key=${apiKey}`, { method: 'DELETE' });
+          this.app.log.info(`Deleted empty Helius Webhook ${this.webhookId}`);
+        }
+        this.webhookId = null;
+      }
+      return;
+    }
 
     const apiKey = process.env.HELIUS_RPC_URL?.split('api-key=')[1];
     if (!apiKey) return;
@@ -187,7 +198,7 @@ export class WebSocketService {
           body: JSON.stringify({
             webhookURL: webhookUrl,
             transactionTypes: ["ANY"],
-            accountAddresses: mints.length > 0 ? mints : ["11111111111111111111111111111111"], // Helius requires at least 1 address
+            accountAddresses: mints,
             webhookType: "enhanced"
           })
         });

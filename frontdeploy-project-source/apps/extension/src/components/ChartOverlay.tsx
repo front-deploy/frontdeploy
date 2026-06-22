@@ -18,6 +18,7 @@ export function ChartOverlay({ tokenAddress, tier }: ChartOverlayProps) {
   const [events, setEvents] = useState<FlowEvent[]>([])
   const [metrics, setMetrics] = useState({ organicVol: 0, loopingVol: 0, suspectVol: 0, roundTrips: 0 })
   const [isLive, setIsLive] = useState(false)
+  const [isManualConnect, setIsManualConnect] = useState(false)
   const [isOpen, setIsOpen] = useState(true)
 
   const handleClose = async () => {
@@ -104,6 +105,7 @@ export function ChartOverlay({ tokenAddress, tier }: ChartOverlayProps) {
   // Connect to WebSocket when tokenAddress changes and user has access
   useEffect(() => {
     if (tier === "none" || tier === "base") return;
+    if (!isManualConnect) return; // Wait for manual trigger
     
     let isActive = true;
     
@@ -186,7 +188,9 @@ export function ChartOverlay({ tokenAddress, tier }: ChartOverlayProps) {
 
   const handleSync = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && tokenAddress) {
+    if (!isManualConnect) {
+      setIsManualConnect(true);
+    } else if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && tokenAddress) {
       console.log("[Flow Radar] Manual sync requested for", tokenAddress);
       wsRef.current.send(JSON.stringify({ action: "subscribe", mint: tokenAddress }));
     } else {
@@ -264,7 +268,13 @@ export function ChartOverlay({ tokenAddress, tier }: ChartOverlayProps) {
           {/* Center line */}
           <div className="absolute w-full h-[1px] bg-[#27272A] top-1/2 -translate-y-1/2 z-0" />
           
-          {events.length === 0 ? (
+          {!isManualConnect ? (
+            <div className="w-full flex justify-center z-10">
+              <button onClick={handleSync} onMouseDown={(e) => e.stopPropagation()} className="text-[10px] text-[#00E599] font-bold tracking-widest uppercase hover:underline bg-[#00E599]/10 px-3 py-1 rounded">
+                Click to Connect Radar
+              </button>
+            </div>
+          ) : events.length === 0 ? (
             <div className="text-[10px] text-[#52525B] w-full text-center tracking-widest uppercase z-10">Waiting for flow data...</div>
           ) : (
             <div className="flex items-center gap-[2px] w-full h-full z-10 overflow-hidden justify-start">
