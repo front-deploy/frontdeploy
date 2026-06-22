@@ -225,7 +225,8 @@ export class WebSocketService {
           events.push({
             signature,
             feePayer,
-            tokenTransfers
+            tokenTransfers,
+            accountKeys: tx.transaction?.message?.accountKeys?.map((k: any) => k.pubkey.toString()) || []
           });
         }
       }
@@ -251,17 +252,22 @@ export class WebSocketService {
       
       if (!tx.tokenTransfers || tx.tokenTransfers.length === 0) continue;
 
-      const mintsInvolved = new Set<string>();
+      const involvedAddresses = new Set<string>();
       for (const transfer of tx.tokenTransfers) {
-        mintsInvolved.add(transfer.mint);
+        involvedAddresses.add(transfer.mint);
+      }
+      if (tx.accountKeys) {
+        for (const key of tx.accountKeys) {
+          involvedAddresses.add(key);
+        }
       }
 
-      this.app.log.info(`[handleHeliusWebhook] Mints involved in tx: ${Array.from(mintsInvolved).join(', ')}`);
+      this.app.log.info(`[handleHeliusWebhook] Mints/Accounts involved: ${Array.from(involvedAddresses).slice(0, 3).join(', ')}...`);
 
-      for (const mint of mintsInvolved) {
-        if (this.tokenSubscriptions.has(mint)) {
-          this.app.log.info(`[handleHeliusWebhook] Matched subscribed mint: ${mint}. Broadcasting!`);
-          const clients = this.tokenSubscriptions.get(mint)!;
+      for (const address of involvedAddresses) {
+        if (this.tokenSubscriptions.has(address)) {
+          this.app.log.info(`[handleHeliusWebhook] Matched subscribed address: ${address}. Broadcasting!`);
+          const clients = this.tokenSubscriptions.get(address)!;
           
           const mainAccount = tx.feePayer || "SmartWallet";
           let action = "SWAP";
@@ -269,38 +275,44 @@ export class WebSocketService {
           let realUsdVolume = 10;
           let realIsNewWallet = false;
           
-          for (const transfer of tx.tokenTransfers) {
-            if (transfer.mint === mint) {
-              if (transfer.toUserAccount === mainAccount) {
+          // Cari transfer token utama (Abaikan WSOL jika memungkinkan) yang melibatkan si feePayer
+          let primaryTransfer = tx.tokenTransfers.find((t: any) => 
+            t.mint !== "So11111111111111111111111111111111111111112" && 
+            (t.toUserAccount === mainAccount || t.fromUserAccount === mainAccount)
+          );
+
+          if (!primaryTransfer) {
+             primaryTransfer = tx.tokenTransfers.find((t: any) => t.toUserAccount === mainAccount || t.fromUserAccount === mainAccount);
+          }
+
+          if (primaryTransfer) {
+             if (primaryTransfer.toUserAccount === mainAccount) {
                 action = "BUY";
-                amount = transfer.tokenAmount.toString();
-                realUsdVolume = transfer.usdVolume || 10;
-                realIsNewWallet = transfer.isNewWallet || false;
-              } else if (transfer.fromUserAccount === mainAccount) {
+                amount = primaryTransfer.tokenAmount.toString();
+                realUsdVolume = primaryTransfer.usdVolume || 10;
+                realIsNewWallet = primaryTransfer.isNewWallet || false;
+             } else if (primaryTransfer.fromUserAccount === mainAccount) {
                 action = "SELL";
-                amount = transfer.tokenAmount.toString();
-                realUsdVolume = transfer.usdVolume || 10;
+                amount = primaryTransfer.tokenAmount.toString();
+                realUsdVolume = primaryTransfer.usdVolume || 10;
                 realIsNewWallet = false;
-              }
-            }
+             }
           }
 
           const message = JSON.stringify({
             type: "smart_money",
             data: {
-              mint,
+              mint: address,
               action,
               amount,
               walletLabel: `Wallet ...${mainAccount.substring(mainAccount.length - 4)}`,
               txSignature: tx.signature
             }
           });
-
-          const parsedAmount = amount === "Unknown" ? 0 : parseFloat(amount);
           
           // Flow Radar Classification
           const flowType = this.flowClassifier.classify(
-            mint, 
+            address, 
             mainAccount, 
             action === "BUY" ? "BUY" : "SELL", 
             realIsNewWallet,
@@ -310,7 +322,7 @@ export class WebSocketService {
           const flowMessage = JSON.stringify({
             type: "flow_event",
             data: {
-              mint,
+              mint: address,
               type: flowType,
               volumeUsd: realUsdVolume,
               wallet: `Wallet ...${mainAccount.substring(mainAccount.length - 4)}`,
