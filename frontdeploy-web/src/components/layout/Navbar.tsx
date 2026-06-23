@@ -38,7 +38,7 @@ export function Navbar() {
             </svg>
           </a>
           <a
-            href="/private/frontdeploy-extension.zip"
+            href="/downloads/frontdeploy-extension.zip"
             download
             className="nav-cta"
           >

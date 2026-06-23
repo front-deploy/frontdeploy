@@ -48,7 +48,7 @@ export function Hero() {
       </p>
       <div className="hero-actions fade-in stagger-3" ref={addElement} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
         <a
-          href="/private/frontdeploy-extension.zip"
+          href="/downloads/frontdeploy-extension.zip"
           download
           className="btn-primary"
           style={{ backgroundColor: 'var(--foreground)', color: 'var(--background)' }}
