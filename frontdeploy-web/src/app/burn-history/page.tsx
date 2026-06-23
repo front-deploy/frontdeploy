@@ -41,7 +41,11 @@ export default async function BurnHistoryPage() {
           Treasury Burn History
         </h1>
         <p style={{ fontSize: '1.1rem', color: 'var(--gray-600)', marginBottom: '40px' }}>
-          Transparent, verifiable on-chain records of 90% of all deployment fees being used to buy back and burn $FDP.
+          Transparent, verifiable on-chain records of 90% of all deployment fees being used to buy back and burn $FDP. 
+          <br/>
+          <span style={{ fontSize: '0.95rem', color: 'var(--gray-500)', marginTop: '8px', display: 'inline-block' }}>
+            ⏳ <strong>Note:</strong> The automated buyback and burn process runs every 6 hours.
+          </span>
         </p>
 
         <div style={{ overflowX: 'auto', background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>

@@ -12,10 +12,14 @@ const RPC_URL = process.env.HELIUS_RPC_URL || '';
 const TREASURY_SECRET = process.env.TREASURY_PRIVATE_KEY || '';
 const FDP_MINT = process.env.FDP_MINT_ADDRESS || '2vCwDJesf1CyHiexyT8nkd72gD1JuKDPGdmeoCX7pump';
 const OPS_WALLET = process.env.OPS_PUBLIC_KEY || '2d5UoM2tMwwgG9W3B1ZpsA9GjP4L1K11y4v6Z6kG1vE7';
+const JUPITER_API_KEY = process.env.JUPITER_API_KEY || '';
+const JUPITER_BASE_URL = process.env.JUPITER_SWAP_BASE_URL || 'https://api.jup.ag/swap/v1';
 
 async function getJupiterQuote(inputMint: string, outputMint: string, amountLamports: number) {
-  const url = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountLamports}&slippageBps=100`;
-  const res = await fetch(url);
+  const url = `${JUPITER_BASE_URL}/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountLamports}&slippageBps=100`;
+  const res = await fetch(url, {
+    headers: JUPITER_API_KEY ? { 'x-api-key': JUPITER_API_KEY } : {}
+  });
   if (!res.ok) {
     const errText = await res.text();
     throw new Error(`Jupiter Quote Failed: ${res.statusText} - ${errText}`);
@@ -24,9 +28,12 @@ async function getJupiterQuote(inputMint: string, outputMint: string, amountLamp
 }
 
 async function getJupiterSwapTransaction(quoteResponse: any, userPublicKey: string) {
-  const res = await fetch('https://quote-api.jup.ag/v6/swap', {
+  const res = await fetch(`${JUPITER_BASE_URL}/swap`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      ...(JUPITER_API_KEY ? { 'x-api-key': JUPITER_API_KEY } : {})
+    },
     body: JSON.stringify({
       quoteResponse,
       userPublicKey,
