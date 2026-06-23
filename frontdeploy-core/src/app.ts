@@ -10,11 +10,12 @@ import { TwitterApiIoSource } from './services/twitterApiIoSource.js';
 import { MockSimulatorService } from './services/mockSimulator.js';
 import webhookRoutes from './routes/webhookRoutes.js';
 import accountHistoryRoutes from './routes/accountHistory.js';
+import { launchHistoryRoutes } from './routes/launchHistory.js';
 import { PrismaClient } from '@prisma/client';
 import cron from 'node-cron';
 import { exec } from 'child_process';
 
-const prisma = new PrismaClient();
+export const prisma = new PrismaClient();
 
 const app = fastify({ logger: true });
 
@@ -37,6 +38,7 @@ app.register(async (instance) => {
   wsService.registerRoutes();
   webhookRoutes(instance, wsService);
   accountHistoryRoutes(instance);
+  instance.register(launchHistoryRoutes, { prefix: '/launch-history' });
 
   // Start services
   if (process.env.USE_MOCK_STREAM === 'true' || !process.env.TWITTER_PROVIDER_KEY) {

@@ -267,6 +267,29 @@ async function handleFastLaunch(draft: FastLaunchDraft, sendResponse: (res: Fron
     if (!createSig) throw new Error("No create signature returned from broadcast");
     console.log("[FastLaunch] CREATE tx broadcasted, sig:", createSig);
 
+    const recordLaunchToBackend = async () => {
+      try {
+        const apiUrl = process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL || "http://localhost:8080";
+        await fetch(`${apiUrl}/launch-history`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mintAddress: mintPubkey,
+            ticker: draft.symbol,
+            name: draft.name,
+            deployerAddress: statusRes.publicKey,
+            txHash: createSig
+          })
+        });
+        console.log("[FastLaunch] Launch history recorded to backend");
+      } catch (err) {
+        console.warn("[FastLaunch] Failed to record launch history to backend", err);
+      }
+    };
+
+    // Fire and forget
+    recordLaunchToBackend();
+
     // 6. If dev buy requested: wait for confirmation then build + sign + broadcast buy tx
     if (hasDevBuy) {
       console.log(`[FastLaunch] Dev buy requested (${devBuySol} SOL), waiting for CREATE tx to confirm...`);

@@ -144,3 +144,19 @@ model XIdentitySnapshot {
   @@map("frontdeploy_x_identity_snapshots")
 }
 
+// ------------------------------------
+// Launch History (Fast Deploy)
+// ------------------------------------
+
+model LaunchHistory {
+  id              String   @id @default(uuid())
+  mintAddress     String   @unique
+  ticker          String
+  name            String
+  deployerAddress String
+  txHash          String
+  createdAt       DateTime @default(now())
+
+  @@map("frontdeploy_launch_history")
+}
+
