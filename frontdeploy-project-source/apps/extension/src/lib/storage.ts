@@ -38,9 +38,9 @@ export interface LaunchSettings {
   ipfsProvider: "pumpfun"
   pinataJwt?: string
   rpcUrl?: string
-  devBuySol: number
-  slippage: number
-  priorityFee: number
+  devBuySol: number | string
+  slippage: number | string
+  priorityFee: number | string
 }
 
 const DEFAULT_SETTINGS: OverlaySettings = {

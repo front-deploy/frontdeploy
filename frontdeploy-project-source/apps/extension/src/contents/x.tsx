@@ -29,8 +29,6 @@ export const config: PlasmoCSConfig = {
   run_at: "document_idle"
 }
 
-
-
 const PROCESSED_ATTR = "data-axiom-launch-processed"
 const RADAR_ROOT_ATTR = "data-axiom-launch-dock"
 

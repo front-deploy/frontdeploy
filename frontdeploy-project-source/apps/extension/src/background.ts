@@ -1,6 +1,7 @@
 import type { FrontendToBackgroundMessage, BackgroundToRelayMessage, RelayToBackgroundMessage, FastLaunchDraft, FrontendWalletStatusResponse, FrontendWalletConnectResponse, FrontendFastLaunchResponse } from "./lib/messaging";
-import { uploadMetadata, buildPartialSignedCreateTx } from "./lib/pumpfun";
-import { saveWalletSession, getLaunchSettings } from "./lib/storage";
+import { Connection, VersionedTransaction } from "@solana/web3.js";
+import { uploadMetadata, buildPartialSignedCreateTx, buildDevBuyTx } from "./lib/pumpfun";
+import { saveWalletSession, getWalletSession, getLaunchSettings } from "./lib/storage";
 import iconUrl from "url:~assets/icon.png";
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -20,7 +21,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (msg.type === "FRONTEND_WALLET_STATUS") {
     handleWalletStatus(sendResponse);
-    return true; // Keep channel open for async response
+    return true;
   }
 
   if (msg.type === "FRONTEND_WALLET_CONNECT") {
@@ -39,59 +40,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Helper to find or create pump.fun create tab
-async function ensurePumpFunTab(draft?: FastLaunchDraft, focusTab: boolean = false): Promise<number> {
-  const tabs = await chrome.tabs.query({ url: "*://pump.fun/create*" });
+// Helper to find the current active tab to inject wallet requests into
+async function ensureActiveTab(): Promise<number> {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   if (tabs.length > 0 && tabs[0]?.id) {
-    if (focusTab) {
-      await chrome.tabs.update(tabs[0].id, { active: true });
-      if (tabs[0].windowId) {
-        await chrome.windows.update(tabs[0].windowId, { focused: true });
-      }
-    }
     return tabs[0].id;
   }
   
-  // Create tab
-  const url = new URL("https://pump.fun/create");
-  if (draft) {
-    url.searchParams.set("name", draft.name);
-    url.searchParams.set("ticker", draft.symbol);
-    url.searchParams.set("symbol", draft.symbol);
-    url.searchParams.set("description", draft.description);
-    if (draft.twitter) url.searchParams.set("twitter", draft.twitter);
-    if (draft.website) url.searchParams.set("website", draft.website);
-    if (draft.telegram) url.searchParams.set("telegram", draft.telegram);
+  // Fallback to any active tab if currentWindow is false (e.g., sidepanel context)
+  const allTabs = await chrome.tabs.query({ active: true });
+  if (allTabs.length > 0 && allTabs[0]?.id) {
+    return allTabs[0].id;
   }
   
-  const newTab = await chrome.tabs.create({ url: url.toString(), active: focusTab });
-  
-  // Wait for tab to be fully loaded so both relay and MAIN scripts are injected
-  await new Promise<void>((resolve) => {
-    chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
-      if (tabId === newTab.id && info.status === 'complete') {
-        chrome.tabs.onUpdated.removeListener(listener);
-        resolve();
-      }
-    });
-  });
-  
-  // Brief pause to ensure MAIN script has attached message listeners
-  await new Promise(r => setTimeout(r, 1000));
-  
-  if (!newTab.id) throw new Error("Could not create pump.fun tab");
-  return newTab.id;
+  throw new Error("Could not find an active tab for wallet signing");
 }
 
 async function handleWalletStatus(sendResponse: (res: FrontendWalletStatusResponse) => void) {
-  // Frontend already checks local session. If it falls back to background, we assume disconnected.
-  // We do NOT want to spawn a pump.fun tab just to check status.
   sendResponse({ connected: false });
 }
 
 async function handleWalletConnect(provider: "phantom" | "solflare" | "backpack", sendResponse: (res: FrontendWalletConnectResponse) => void) {
   try {
-    const tabId = await ensurePumpFunTab(undefined, true);
+    const tabId = await ensureActiveTab();
     const id = Math.random().toString(36).substring(2, 15);
     
     const listener = (relayMsg: any) => {
@@ -115,7 +86,7 @@ async function handleWalletConnect(provider: "phantom" | "solflare" | "backpack"
     setTimeout(() => {
       chrome.runtime.onMessage.removeListener(listener);
       sendResponse({ success: false, error: "Connect timeout" });
-    }, 30000); // 30s timeout for user approval
+    }, 30000);
     
   } catch (err: any) {
     sendResponse({ success: false, error: err.message });
@@ -124,8 +95,6 @@ async function handleWalletConnect(provider: "phantom" | "solflare" | "backpack"
 
 async function handleWalletDisconnect(provider: "phantom" | "solflare" | "backpack", sendResponse: (res: any) => void) {
   try {
-    // Simply clear our local session to disconnect the extension.
-    // No need to spawn a pump.fun tab and force disconnect there.
     await saveWalletSession(null);
     sendResponse({ success: true });
   } catch (err: any) {
@@ -133,62 +102,203 @@ async function handleWalletDisconnect(provider: "phantom" | "solflare" | "backpa
   }
 }
 
+/**
+ * Request the active tab's wallet to sign a list of transactions.
+ * Returns signed transactions as base64 strings.
+ */
+function requestWalletSignature(
+  tabId: number,
+  provider: string,
+  txsBase64: string[],
+  rpcUrls: string[],
+  timeoutMs = 180000
+): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const id = Math.random().toString(36).substring(2, 15);
+
+    const listener = (relayMsg: any) => {
+      if (relayMsg.type === "RELAY_SIGN_SEND_RESPONSE" && relayMsg.id === id) {
+        chrome.runtime.onMessage.removeListener(listener);
+        clearTimeout(timer);
+        if (relayMsg.success && relayMsg.signatures) {
+          resolve(relayMsg.signatures as string[]);
+        } else {
+          reject(new Error(relayMsg.error || "User rejected signature"));
+        }
+      }
+    };
+    chrome.runtime.onMessage.addListener(listener);
+
+    const request: BackgroundToRelayMessage = {
+      type: "BACKGROUND_SIGN_SEND_REQUEST",
+      id,
+      provider: provider as "phantom" | "solflare" | "backpack",
+      txsBase64,
+      rpcUrls
+    };
+    chrome.tabs.sendMessage(tabId, request);
+
+    const timer = setTimeout(() => {
+      chrome.runtime.onMessage.removeListener(listener);
+      reject(new Error("Sign timeout"));
+    }, timeoutMs);
+  });
+}
+
+/**
+ * Broadcast signed transactions (base64) to the Solana network using RPC fallback.
+ */
+async function broadcastTransactions(signedTxsBase64: string[], rpcUrls: string[]): Promise<string[]> {
+  const finalSignatures: string[] = [];
+
+  for (const b64Tx of signedTxsBase64) {
+    const txBytes = Uint8Array.from(atob(b64Tx), c => c.charCodeAt(0));
+    let sig: string | null = null;
+    let lastError: any = null;
+
+    for (const url of rpcUrls) {
+      try {
+        const connection = new Connection(url, "confirmed");
+        sig = await connection.sendRawTransaction(txBytes, {
+          skipPreflight: false,
+          maxRetries: 3
+        });
+        break;
+      } catch (err) {
+        lastError = err;
+        console.warn(`RPC broadcast failed for ${url}, falling back...`, err);
+      }
+    }
+
+    if (!sig) {
+      throw lastError || new Error("All RPC fallbacks failed");
+    }
+    finalSignatures.push(sig);
+  }
+
+  return finalSignatures;
+}
+
+/**
+ * Wait for a transaction to be confirmed on-chain before proceeding.
+ */
+async function waitForConfirmation(
+  signature: string,
+  rpcUrls: string[],
+  maxAttempts = 30,
+  intervalMs = 2000
+): Promise<void> {
+  for (const url of rpcUrls) {
+    try {
+      const connection = new Connection(url, "confirmed");
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const status = await connection.getSignatureStatus(signature);
+        const confirmationStatus = status?.value?.confirmationStatus;
+        if (confirmationStatus === "confirmed" || confirmationStatus === "finalized") {
+          console.log(`[FastLaunch] Create tx confirmed after ${attempt + 1} attempts`);
+          return;
+        }
+        if (status?.value?.err) {
+          throw new Error(`Transaction failed on-chain: ${JSON.stringify(status.value.err)}`);
+        }
+        await new Promise(r => setTimeout(r, intervalMs));
+      }
+      throw new Error("Confirmation timeout: transaction not confirmed after max attempts");
+    } catch (err: any) {
+      console.warn(`[FastLaunch] Confirmation check failed via ${url}:`, err.message);
+      // Try next RPC
+    }
+  }
+  throw new Error("Could not confirm transaction via any RPC");
+}
+
 async function handleFastLaunch(draft: FastLaunchDraft, sendResponse: (res: FrontendFastLaunchResponse) => void) {
   try {
     // 1. Ensure tab exists and check wallet status
-    const tabId = await ensurePumpFunTab(draft, true);
+    const tabId = await ensureActiveTab();
     
-    const statusRes = await new Promise<FrontendWalletStatusResponse>(resolve => {
-      handleWalletStatus(resolve);
-    });
-    
-    if (!statusRes.connected || !statusRes.publicKey) {
+    const statusRes = await getWalletSession();
+    if (!statusRes || !statusRes.connected || !statusRes.publicKey) {
       throw new Error("Wallet not connected. Connect first.");
     }
     
-    const provider = (statusRes.provider as any) || "phantom";
+    const provider = statusRes.provider || "phantom";
+
+    const settings = await getLaunchSettings();
+    const primaryRpcUrl = settings.rpcUrl || process.env.PLASMO_PUBLIC_RPC_URL;
+    const heliusFallback = process.env.PLASMO_PUBLIC_HELIUS_RPC_URL;
+    const rpcUrls = [primaryRpcUrl, heliusFallback].filter(Boolean) as string[];
+
+    const devBuySol = Number(String(settings.devBuySol || 0).replace(',', '.'));
+    const hasDevBuy = devBuySol > 0;
 
     // 2. Upload metadata
     console.log("[FastLaunch] Starting uploadMetadata");
     const metadataUri = await uploadMetadata(draft);
     console.log("[FastLaunch] uploadMetadata success, uri:", metadataUri);
 
-    // 3. Build & sign with mint keypair via pumpfun trade-local api
+    // 3. Build create tx (always amount=0)
     console.log("[FastLaunch] Starting buildPartialSignedCreateTx");
-    const { txsBase64, mintKeypair } = await buildPartialSignedCreateTx(statusRes.publicKey, metadataUri, draft);
-    console.log("[FastLaunch] buildPartialSignedCreateTx success, mint:", mintKeypair.publicKey.toBase58());
-    
-    // 4. Send to bridge for payer signature
-    const id = Math.random().toString(36).substring(2, 15);
-    
-    const listener = (relayMsg: any) => {
-      if (relayMsg.type === "RELAY_SIGN_SEND_RESPONSE" && relayMsg.id === id) {
-        chrome.runtime.onMessage.removeListener(listener);
+    const { txsBase64: createTxsBase64, mintKeypair } = await buildPartialSignedCreateTx(
+      statusRes.publicKey,
+      metadataUri,
+      draft
+    );
+    const mintPubkey = mintKeypair.publicKey.toBase58();
+    console.log("[FastLaunch] buildPartialSignedCreateTx success, mint:", mintPubkey);
+
+    // 4. Ask wallet to sign CREATE tx (+ fee tx)
+    console.log("[FastLaunch] Requesting wallet signature for CREATE tx");
+    const signedCreateTxs = await requestWalletSignature(tabId, provider, createTxsBase64, rpcUrls);
+    console.log("[FastLaunch] Wallet signed CREATE tx, broadcasting...");
+
+    // 5. Broadcast create tx
+    const createSignatures = await broadcastTransactions(signedCreateTxs, rpcUrls);
+    const createSig = createSignatures[0];
+    if (!createSig) throw new Error("No create signature returned from broadcast");
+    console.log("[FastLaunch] CREATE tx broadcasted, sig:", createSig);
+
+    // 6. If dev buy requested: wait for confirmation then build + sign + broadcast buy tx
+    if (hasDevBuy) {
+      console.log(`[FastLaunch] Dev buy requested (${devBuySol} SOL), waiting for CREATE tx to confirm...`);
+      
+      try {
+        await waitForConfirmation(createSig, rpcUrls);
+        console.log("[FastLaunch] CREATE tx confirmed. Building dev buy tx...");
+
+        const devBuyTxBase64 = await buildDevBuyTx(statusRes.publicKey, mintPubkey, "");
+        console.log("[FastLaunch] Dev buy tx built. Requesting wallet signature...");
+
+        const signedDevBuyTxs = await requestWalletSignature(tabId, provider, [devBuyTxBase64], rpcUrls);
+        console.log("[FastLaunch] Wallet signed dev buy tx, broadcasting...");
+
+        const devBuySignatures = await broadcastTransactions(signedDevBuyTxs, rpcUrls);
+        console.log("[FastLaunch] DEV BUY tx broadcasted, sig:", devBuySignatures[0]);
+
         sendResponse({
-          success: relayMsg.success,
-          mint: mintKeypair.publicKey.toBase58(),
-          signatures: relayMsg.signatures,
-          error: relayMsg.error
+          success: true,
+          mint: mintPubkey,
+          signatures: [...createSignatures, ...devBuySignatures]
+        });
+      } catch (devBuyErr: any) {
+        // Create succeeded but dev buy failed — still report success with warning
+        console.error("[FastLaunch] Dev buy failed (token was created):", devBuyErr);
+        sendResponse({
+          success: true,
+          mint: mintPubkey,
+          signatures: createSignatures,
+          error: `Token created but dev buy failed: ${devBuyErr.message}`
         });
       }
-    };
-    chrome.runtime.onMessage.addListener(listener);
-    
-    const settings = await getLaunchSettings();
-    // Primary: free mainnet-beta (or user setting), Fallback: Helius
-    const primaryRpcUrl = settings.rpcUrl || process.env.PLASMO_PUBLIC_RPC_URL;
-    const heliusFallback = process.env.PLASMO_PUBLIC_HELIUS_RPC_URL;
-    
-    const rpcUrls = [primaryRpcUrl, heliusFallback].filter(Boolean) as string[];
-    
-    const request: BackgroundToRelayMessage = { type: "BACKGROUND_SIGN_SEND_REQUEST", id, provider, txsBase64, rpcUrls };
-    chrome.tabs.sendMessage(tabId, request);
-    
-    setTimeout(() => {
-      chrome.runtime.onMessage.removeListener(listener);
-      sendResponse({ success: false, error: "Sign timeout" });
-    }, 180000); // 180s timeout
-    
+    } else {
+      // No dev buy, done
+      sendResponse({
+        success: true,
+        mint: mintPubkey,
+        signatures: createSignatures
+      });
+    }
+
   } catch (err: any) {
     console.error("[FastLaunch] handleFastLaunch encountered an error:", err);
     sendResponse({ success: false, error: err.message });

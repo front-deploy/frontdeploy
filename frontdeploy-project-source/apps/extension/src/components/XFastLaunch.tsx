@@ -62,6 +62,10 @@ export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunch
     const res = await fastLaunch(draft);
     if (res.success && res.mint) {
       setSuccessLink(`https://pump.fun/${res.mint}`);
+      // If token was created but dev buy failed, show as warning
+      if (res.error) {
+        setError(`⚠️ ${res.error}`);
+      }
     } else {
       console.error("[FastLaunch Frontend] Launch failed:", res.error);
       setError(res.error || "Failed to launch");
@@ -117,11 +121,11 @@ export function FastLaunch({ initialDraft }: { initialDraft?: Partial<FastLaunch
           <div className="flex gap-2">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-axiom-muted">Dev Buy (SOL)</label>
-              <input type="number" step="0.1" className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs text-axiom-text focus:outline-none" value={settings.devBuySol} onChange={e => setSettings(s => ({ ...s, devBuySol: parseFloat(e.target.value) || 0 }))} />
+              <input type="text" inputMode="decimal" className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs text-axiom-text focus:outline-none" value={settings.devBuySol} onChange={e => setSettings(s => ({ ...s, devBuySol: e.target.value.replace(/[^0-9.,]/g, '') }))} />
             </div>
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs text-axiom-muted">Slippage (%)</label>
-              <input type="number" className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs text-axiom-text focus:outline-none" value={settings.slippage} onChange={e => setSettings(s => ({ ...s, slippage: parseFloat(e.target.value) || 5 }))} />
+              <input type="text" inputMode="decimal" className="px-2 py-1 bg-axiom-bg border border-axiom-border rounded text-xs text-axiom-text focus:outline-none" value={settings.slippage} onChange={e => setSettings(s => ({ ...s, slippage: e.target.value.replace(/[^0-9.,]/g, '') }))} />
             </div>
           </div>
         </div>

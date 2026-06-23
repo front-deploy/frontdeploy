@@ -3,7 +3,7 @@ import type { PageToBridgeMessage, BridgeToPageMessage, RelayToBackgroundMessage
 import { WALLET_CHANNEL } from "../lib/messaging";
 
 export const config: PlasmoCSConfig = {
-  matches: ["https://pump.fun/create*", "https://www.pump.fun/create*"],
+  matches: ["<all_urls>"],
   run_at: "document_idle"
 };
 

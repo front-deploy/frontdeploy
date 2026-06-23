@@ -4,7 +4,7 @@ import type { PageToBridgeMessage, BridgeToPageMessage } from "../lib/messaging"
 import { WALLET_CHANNEL } from "../lib/messaging";
 
 export const config: PlasmoCSConfig = {
-  matches: ["https://pump.fun/create*", "https://www.pump.fun/create*"],
+  matches: ["<all_urls>"],
   world: "MAIN",
   run_at: "document_idle"
 };
@@ -134,37 +134,17 @@ window.addEventListener("message", async (event) => {
       
       const signedTxs = await provider.signAllTransactions(txs);
       
-      const signatures = [];
-      
-      for (const signedTx of signedTxs) {
-        let sig = null;
-        let lastError = null;
-        
-        for (const url of msg.rpcUrls) {
-          try {
-            const connection = new Connection(url, "confirmed");
-            sig = await connection.sendRawTransaction(signedTx.serialize(), {
-              skipPreflight: false,
-              maxRetries: 3
-            });
-            break; // Success, break out of RPC loop
-          } catch (err) {
-            lastError = err;
-            console.warn(`RPC broadcast failed for ${url}, falling back...`, err);
-          }
-        }
-        
-        if (!sig) {
-          throw lastError || new Error("All RPC fallbacks failed");
-        }
-        signatures.push(sig);
-      }
+      const signedTxsBase64 = (signedTxs as VersionedTransaction[]).map((signedTx: VersionedTransaction) => {
+        const signedBytes = signedTx.serialize();
+        const binaryString = Array.from(signedBytes).map((byte: number) => String.fromCharCode(byte)).join('');
+        return btoa(binaryString);
+      });
       
       const response: BridgeToPageMessage = {
         type: "wallet-sign-send-response",
         id: msg.id,
         success: true,
-        signatures
+        signatures: signedTxsBase64
       };
       window.postMessage({ channel: WALLET_CHANNEL, msg: response }, "*");
     } catch (err: any) {

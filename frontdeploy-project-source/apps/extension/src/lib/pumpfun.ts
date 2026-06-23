@@ -86,6 +86,10 @@ export async function uploadMetadata(draft: FastLaunchDraft): Promise<string> {
   return data.metadataUri;
 }
 
+/**
+ * Build the CREATE transaction (always amount=0).
+ * If devBuySol > 0, a separate buy tx will be built afterwards via buildDevBuyTx.
+ */
 export async function buildPartialSignedCreateTx(
   payerPublicKeyBase58: string, 
   metadataUri: string, 
@@ -95,6 +99,7 @@ export async function buildPartialSignedCreateTx(
   const settings = await getLaunchSettings();
   const mintKeypair = Keypair.generate();
   
+  // Always create with amount=0. Dev buy is done in a separate tx after the token is on-chain.
   const reqBody = {
     publicKey: payerPublicKeyBase58,
     action: "create",
@@ -105,16 +110,11 @@ export async function buildPartialSignedCreateTx(
     },
     mint: mintKeypair.publicKey.toBase58(),
     denominatedInSol: true,
-    amount: Number(settings.devBuySol || 0),
-    slippage: Number(settings.slippage || 5),
-    priorityFee: Number(settings.priorityFee || 0.0005),
+    amount: 0,
+    slippage: Number(String(settings.slippage || 5).replace(',', '.')),
+    priorityFee: Number(String(settings.priorityFee || 0.0005).replace(',', '.')),
     pool: "pump"
   };
-
-  // If amount is 0, pumpportal API might prefer it to be omitted entirely or just 0, but boolean denominatedInSol is the main fix.
-  if (reqBody.amount === 0) {
-    delete (reqBody as any).amount;
-  }
 
   const response = await fetch("https://pumpportal.fun/api/trade-local", {
     method: "POST",
@@ -139,22 +139,18 @@ export async function buildPartialSignedCreateTx(
 
   const txBytes = new Uint8Array(await response.arrayBuffer());
   
-  // We need to sign this tx with the mint keypair.
+  // Sign the create tx with the mint keypair (required by PumpPortal).
   const tx = VersionedTransaction.deserialize(txBytes);
-  
   tx.sign([mintKeypair]);
   
-  // Convert signed tx to base64
+  // Serialize to base64
   const signedTxBytes = tx.serialize();
-  
-  // base64 encode using btoa and raw characters
   const binaryString = Array.from(signedTxBytes).map(byte => String.fromCharCode(byte)).join('');
   const txBase64 = btoa(binaryString);
   const txsBase64 = [txBase64];
 
-  // Create Fee Transaction
-  const feeAmount = 30_000_000; // 0.03 SOL
-  // Check if treasury is configured
+  // Create Fee Transaction (0.03 SOL platform fee)
+  const feeAmount = 30_000_000;
   const treasuryStr = process.env.PLASMO_PUBLIC_TREASURY_WALLET;
   if (!treasuryStr) {
     throw new Error("Treasury wallet is not configured. Please add PLASMO_PUBLIC_TREASURY_WALLET to your .env");
@@ -187,4 +183,64 @@ export async function buildPartialSignedCreateTx(
   }
   
   return { txsBase64, mintKeypair };
+}
+
+/**
+ * Build a DEV BUY transaction for a token that has already been created on-chain.
+ * This is called AFTER the create tx is confirmed.
+ */
+export async function buildDevBuyTx(
+  payerPublicKeyBase58: string,
+  mintPubkeyBase58: string,
+  recentBlockhash: string
+): Promise<string> {
+  const settings = await getLaunchSettings();
+  const devBuySol = Number(String(settings.devBuySol || 0).replace(',', '.'));
+  
+  if (!devBuySol || devBuySol <= 0) {
+    throw new Error("Dev buy amount is 0, should not call buildDevBuyTx");
+  }
+
+  const reqBody = {
+    publicKey: payerPublicKeyBase58,
+    action: "buy",
+    mint: mintPubkeyBase58,
+    denominatedInSol: "true",
+    amount: devBuySol,
+    slippage: Number(String(settings.slippage || 5).replace(',', '.')),
+    priorityFee: Number(String(settings.priorityFee || 0.0005).replace(',', '.')),
+    pool: "pump"
+  };
+
+  console.log("[Pumpfun API] Building dev buy tx for mint:", mintPubkeyBase58, "amount:", devBuySol);
+
+  const response = await fetch("https://pumpportal.fun/api/trade-local", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(reqBody)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => response.statusText);
+    console.error("[Pumpfun API] dev buy trade-local failed:", response.status, errorText);
+    throw new Error(`PumpPortal dev buy failed: ${errorText || response.statusText}`);
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`PumpPortal dev buy JSON error: ${errorData.error || errorData.message || JSON.stringify(errorData)}`);
+  }
+
+  const txBytes = new Uint8Array(await response.arrayBuffer());
+  const tx = VersionedTransaction.deserialize(txBytes);
+  
+  // Override blockhash so both txs use the same one (avoids blockhash expiry issues)
+  // Actually, let the API set its own blockhash since it's a fresh request
+  
+  const signedTxBytes = tx.serialize();
+  const binaryString = Array.from(signedTxBytes).map(byte => String.fromCharCode(byte)).join('');
+  return btoa(binaryString);
 }
