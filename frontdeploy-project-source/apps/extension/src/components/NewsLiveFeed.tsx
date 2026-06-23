@@ -136,28 +136,26 @@ export function NewsLiveFeed() {
                     {evt.contractAddress}
                   </span>
                 )}
-                {(evt.ticker || evt.contractAddress) && (
-                  <button
-                    onClick={() => {
-                      if (typeof chrome !== "undefined" && chrome.storage) {
-                        chrome.storage.local.set({
-                          "axiomIntelligence.launchContext": {
-                            id: evt.tweetId,
-                            text: evt.text,
-                            url: evt.url,
-                            handle: evt.authorHandle,
-                            influence: "major",
-                            ticker: evt.ticker || evt.contractAddress || ""
-                          },
-                          kolDeployTrigger: Date.now()
-                        });
-                      }
-                    }}
-                    className="ml-auto px-3 py-1 bg-black text-white border border-axiom-border text-xs font-semibold rounded hover:bg-black/80 transition-colors"
-                  >
-                    Deploy
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    if (typeof chrome !== "undefined" && chrome.storage) {
+                      chrome.storage.local.set({
+                        "axiomIntelligence.launchContext": {
+                          id: evt.tweetId,
+                          text: evt.text,
+                          url: evt.url,
+                          handle: evt.authorHandle,
+                          influence: "major",
+                          ticker: evt.ticker || evt.contractAddress || ""
+                        },
+                        kolDeployTrigger: Date.now()
+                      });
+                    }
+                  }}
+                  className="ml-auto px-3 py-1 bg-black text-white border border-axiom-border text-xs font-semibold rounded hover:bg-black/80 transition-colors"
+                >
+                  Deploy
+                </button>
               </div>
             </div>
           ))
