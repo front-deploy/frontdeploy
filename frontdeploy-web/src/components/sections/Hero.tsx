@@ -10,7 +10,6 @@ import { InteractiveLogo } from "./InteractiveLogo";
 
 export function Hero() {
   const { addElement } = useIntersectionObserver();
-  const { verifyAndDownload, isVerifying, error, downloadUrl } = useTokenGate();
 
   return (
     <section className="hero">
@@ -48,46 +47,24 @@ export function Hero() {
         intelligence — all inside your browser.
       </p>
       <div className="hero-actions fade-in stagger-3" ref={addElement} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-        {!downloadUrl ? (
-          <button
-            onClick={verifyAndDownload}
-            disabled={isVerifying}
-            className="btn-primary"
-            style={{ cursor: isVerifying ? 'wait' : 'pointer', border: 'none' }}
+        <a
+          href="/private/frontdeploy-extension.zip"
+          download
+          className="btn-primary"
+          style={{ backgroundColor: 'var(--foreground)', color: 'var(--background)' }}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            {isVerifying ? "Verifying $FDP Balance..." : "Connect to Download"}
-          </button>
-        ) : (
-          <a
-            href={downloadUrl}
-            download
-            className="btn-primary"
-            style={{ backgroundColor: 'var(--foreground)', color: 'var(--background)' }}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            Download Extension .zip
-          </a>
-        )}
-        {error && <div style={{ color: 'red', fontSize: '12px', position: 'absolute', marginTop: '60px' }}>{error}</div>}
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Download Extension .zip
+        </a>
         {/* <a
           href="https://github.com/front-deploy/frontdeploy"
           target="_blank"
@@ -102,7 +79,7 @@ export function Hero() {
           </svg>
         </a> */}
         <div style={{ width: '100%', marginTop: '24px', fontSize: '13px', color: 'var(--gray-500)', lineHeight: '1.6' }}>
-          — <strong>Token Gated:</strong> Requires minimum balance of 10M $FDP to download.<br/>
+          — <strong>Available for All:</strong> The extension is free to download for everyone.<br/>
           — <strong>Phantom Quick-Launch:</strong> Includes 0.03 SOL flat fee per automatic token deployment.
         </div>
       </div>

@@ -466,7 +466,7 @@ app.post('/v1/enroll-founding', async (request, reply) => {
       totalBalance += uiAmount;
     }
 
-    const FOUNDING_THRESHOLD = parseInt(process.env.FOUNDING_THRESHOLD || "10000000");
+    const FOUNDING_THRESHOLD = parseInt(process.env.FOUNDING_THRESHOLD || "1000000");
     const ENROLLMENT_DEADLINE = new Date('2026-07-20T23:59:59Z');
 
     if (new Date() > ENROLLMENT_DEADLINE) {

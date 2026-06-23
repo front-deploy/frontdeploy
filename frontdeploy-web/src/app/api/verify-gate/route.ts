@@ -6,7 +6,7 @@ import { readFileSync } from "fs";
 import path from "path";
 
 const FDP_MINT = process.env.NEXT_PUBLIC_FRONTDEPLOY_CA;
-const MIN_BALANCE = parseInt(process.env.MIN_TOKEN_BALANCE || "10000000", 10); // 10 million FDP
+const MIN_BALANCE = parseInt(process.env.MIN_TOKEN_BALANCE || "1000000", 10); // 1 million FDP
 
 export async function POST(req: Request) {
   try {

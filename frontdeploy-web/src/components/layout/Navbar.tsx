@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useTokenGate } from "@/hooks/useTokenGate";
+import { useTokenGate } from "@/hooks/useTokenGate"; // kept for unused variable warnings if any, or remove
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
-  const { verifyAndDownload, isVerifying, downloadUrl } = useTokenGate();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -38,24 +37,13 @@ export function Navbar() {
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
             </svg>
           </a>
-          {!downloadUrl ? (
-            <button
-              onClick={verifyAndDownload}
-              disabled={isVerifying}
-              className="nav-cta"
-              style={{ cursor: isVerifying ? 'wait' : 'pointer', border: 'none' }}
-            >
-              {isVerifying ? "Verifying..." : "Download"}
-            </button>
-          ) : (
-            <a
-              href={downloadUrl}
-              download
-              className="nav-cta"
-            >
-              Download .zip
-            </a>
-          )}
+          <a
+            href="/private/frontdeploy-extension.zip"
+            download
+            className="nav-cta"
+          >
+            Download .zip
+          </a>
         </div>
       </div>
     </nav>

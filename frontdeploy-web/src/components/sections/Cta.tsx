@@ -1,7 +1,7 @@
 "use client";
 
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
-import { useTokenGate } from "@/hooks/useTokenGate";
+import { useTokenGate } from "@/hooks/useTokenGate"; // kept for unused variable warnings if any, or remove
 
 export const GLOBE_ASCII = `     +*#######################################################################################+     
   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  
@@ -61,7 +61,6 @@ export const GLOBE_ASCII = `     +*#############################################
 
 export function Cta() {
   const { addElement } = useIntersectionObserver();
-  const { verifyAndDownload, isVerifying, downloadUrl, error } = useTokenGate();
 
   return (
     <section className="cta-section">
@@ -75,28 +74,8 @@ export function Cta() {
         catches on.
       </p>
       <div className="fade-in stagger-2" ref={addElement}>
-        {!downloadUrl ? (
-          <button
-            onClick={verifyAndDownload}
-            disabled={isVerifying}
-            className="btn-primary"
-            style={{ cursor: isVerifying ? 'wait' : 'pointer', border: 'none', position: 'relative' }}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            {isVerifying ? "Verifying..." : "Connect to Download"}
-          </button>
-        ) : (
           <a
-            href={downloadUrl}
+            href="/private/frontdeploy-extension.zip"
             download
             className="btn-primary"
           >
@@ -112,10 +91,8 @@ export function Cta() {
             </svg>
             Download Extension .zip
           </a>
-        )}
-        {error && <div style={{ color: 'red', fontSize: '12px', marginTop: '12px' }}>{error}</div>}
         <div style={{ width: '100%', marginTop: '24px', fontSize: '13px', color: 'var(--gray-500)', lineHeight: '1.6', textAlign: 'center' }}>
-          — <strong>Token Gated:</strong> Requires minimum balance of 10M $FDP to download.<br/>
+          — <strong>Available for All:</strong> The extension is free to download for everyone.<br/>
           — <strong>Phantom Quick-Launch:</strong> Includes 0.03 SOL flat fee per automatic token deployment.
         </div>
       </div>
