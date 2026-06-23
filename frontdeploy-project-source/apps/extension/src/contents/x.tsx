@@ -17,6 +17,7 @@ import { hasAccess } from "../lib/holderTier"
 import { getWalletStatus } from "../lib/popup-api"
 import { WalletButton } from "../components/XWalletButton"
 import { FastLaunch } from "../components/XFastLaunch"
+import { AccountHistoryOverlay } from "../components/AccountHistoryOverlay"
 
 export const config: PlasmoCSConfig = {
   matches: [
@@ -109,17 +110,17 @@ let currentProfileUrl = "";
 let isFetchingSmartFollowers = false;
 
 async function scanSmartFollowers() {
+  const match = window.location.pathname.match(/^\/([a-zA-Z0-9_]+)$/);
+  const ignoreList = ["home", "explore", "notifications", "messages", "bookmarks", "settings", "search"];
+  if (!match || !match[1] || ignoreList.includes(match[1].toLowerCase())) return;
+  const handle = match[1];
+
   if (window.location.href === currentProfileUrl && document.querySelector('.axiom-smart-followers-overlay')) {
     return;
   }
   
   if (isFetchingSmartFollowers) return;
   
-  const match = window.location.pathname.match(/^\/([a-zA-Z0-9_]+)$/);
-  const ignoreList = ["home", "explore", "notifications", "messages", "bookmarks", "settings", "search"];
-  if (!match || !match[1] || ignoreList.includes(match[1].toLowerCase())) return;
-  const handle = match[1];
-
   const header = document.querySelector('[data-testid="UserProfileHeader_Items"]');
   if (!header) return;
 
@@ -128,6 +129,17 @@ async function scanSmartFollowers() {
 
   try {
     document.querySelector('.axiom-smart-followers-overlay')?.remove();
+    document.querySelector('.axiom-account-history-overlay')?.remove();
+    
+    // Inject Account History React Component
+    const historyContainer = document.createElement("div");
+    historyContainer.className = "axiom-account-history-overlay";
+    header.parentElement?.appendChild(historyContainer);
+    
+    const root = createRoot(historyContainer);
+    root.render(<AccountHistoryOverlay handle={handle} />);
+
+    // Fetch Smart Followers
     const apiUrl = process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL || "http://localhost:8080";
     const res = await fetch(`${apiUrl}/smart-followers?handle=${handle}`);
     if (res.ok) {

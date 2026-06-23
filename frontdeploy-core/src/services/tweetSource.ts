@@ -2,6 +2,9 @@ export interface TweetEvent {
   id: string;
   authorHandle: string;
   authorId: string;
+  authorDisplayName?: string;
+  authorBio?: string;
+  authorAvatarUrl?: string;
   text: string;
   url: string;
   type: 'tweet' | 'reply';

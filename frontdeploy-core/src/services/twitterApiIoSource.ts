@@ -55,8 +55,14 @@ export class TwitterApiIoSource implements TweetSource {
         for (const t of tweetsRaw) {
           const id = t.id_str || t.id || t.rest_id;
           const text = t.full_text || t.text;
-          const authorHandle = t.user?.screen_name || t.author?.userName || 'unknown';
-          const authorId = t.user?.id_str || t.author?.id || 'unknown';
+          
+          const userObj = t.user || t.author || {};
+          const authorHandle = userObj.screen_name || userObj.userName || 'unknown';
+          const authorId = userObj.id_str || userObj.id || 'unknown';
+          const authorDisplayName = userObj.name || userObj.displayName;
+          const authorBio = userObj.description || userObj.bio;
+          const authorAvatarUrl = userObj.profile_image_url_https || userObj.profilePicture;
+
           const ts = t.created_at || new Date().toISOString();
           
           const isReply = !!(t.in_reply_to_status_id_str || t.is_reply);
@@ -65,6 +71,9 @@ export class TwitterApiIoSource implements TweetSource {
             id: id.toString(),
             authorHandle,
             authorId: authorId.toString(),
+            authorDisplayName,
+            authorBio,
+            authorAvatarUrl,
             text,
             url: `https://x.com/${authorHandle}/status/${id}`,
             type: isReply ? 'reply' : 'tweet',

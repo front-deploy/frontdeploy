@@ -124,3 +124,22 @@ model User {
 
   @@map("frontdeploy_user")
 }
+
+// ------------------------------------
+// Pro Features / Account History
+// ------------------------------------
+
+model XIdentitySnapshot {
+  id           String   @id @default(uuid())
+  handle       String
+  xUserId      String   @map("x_user_id")
+  displayName  String
+  bio          String
+  avatarUrl    String
+  ts           DateTime @default(now())
+
+  @@index([xUserId])
+  @@index([handle])
+  @@map("frontdeploy_x_identity_snapshots")
+}
+

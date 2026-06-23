@@ -2,6 +2,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import type { WebSocketService, KolEventPayload } from './websocketService.js';
 import type { TweetSource, TweetEvent } from './tweetSource.js';
+import { UserSnapshotService } from './userSnapshotService.js';
 
 const prisma = new PrismaClient();
 
@@ -16,13 +17,17 @@ export class IngestionPipeline {
   
   // Track category of handles for the payload
   private handleCategories = new Map<string, string>();
+  
+  private userSnapshotService: UserSnapshotService;
 
   constructor(
     private source: TweetSource,
     private wsService: WebSocketService,
     private logger: FastifyBaseLogger,
     private pollIntervalMs: number = 10000
-  ) {}
+  ) {
+    this.userSnapshotService = new UserSnapshotService(logger);
+  }
 
   public async start() {
     if (this.isRunning) return;
@@ -96,6 +101,18 @@ export class IngestionPipeline {
 
   private processTweet(tweet: TweetEvent) {
     this.logger.info(`New tweet from @${tweet.authorHandle}: ${tweet.text.substring(0, 50)}...`);
+
+    // Take identity snapshot
+    this.userSnapshotService.takeSnapshot({
+      handle: tweet.authorHandle,
+      xUserId: tweet.authorId,
+      displayName: tweet.authorDisplayName || '',
+      bio: tweet.authorBio || '',
+      avatarUrl: tweet.authorAvatarUrl || ''
+    }).catch(err => {
+      this.logger.error({ err }, '[IngestionPipeline] Failed taking snapshot');
+    });
+
 
     // Basic regex to find Solana Contract Addresses (Base58, 32-44 chars)
     const caRegex = /\b[1-9A-HJ-NP-Za-km-z]{32,44}\b/g;

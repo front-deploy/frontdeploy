@@ -9,6 +9,7 @@ import { IngestionPipeline } from './services/ingestionPipeline.js';
 import { TwitterApiIoSource } from './services/twitterApiIoSource.js';
 import { MockSimulatorService } from './services/mockSimulator.js';
 import webhookRoutes from './routes/webhookRoutes.js';
+import accountHistoryRoutes from './routes/accountHistory.js';
 import { PrismaClient } from '@prisma/client';
 import cron from 'node-cron';
 import { exec } from 'child_process';
@@ -35,6 +36,7 @@ app.register(async (instance) => {
   wsService = new WebSocketService(instance);
   wsService.registerRoutes();
   webhookRoutes(instance, wsService);
+  accountHistoryRoutes(instance);
 
   // Start services
   if (process.env.USE_MOCK_STREAM === 'true' || !process.env.TWITTER_PROVIDER_KEY) {
