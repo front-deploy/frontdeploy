@@ -4,9 +4,9 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Optional: Helius RPC CA Check
-async function checkCaStatus(mint: string): Promise<string> {
+async function checkCaStatus(mint: string): Promise<{status: string, logoUrl?: string}> {
   const rpcUrl = process.env.HELIUS_RPC_URL;
-  if (!rpcUrl) return 'unknown';
+  if (!rpcUrl) return { status: 'unknown' };
 
   try {
     const response = await fetch(rpcUrl, {
@@ -21,16 +21,24 @@ async function checkCaStatus(mint: string): Promise<string> {
     });
 
     const data = await response.json() as any;
+    let status = 'unknown';
+    let logoUrl: string | undefined;
+
     if (data && data.result) {
+      if (data.result.content?.links?.image) {
+        logoUrl = data.result.content.links.image;
+      }
+      
       // Basic heuristic: check if token exists and has supply
       if (data.result.token_info) {
-        if (data.result.token_info.supply === 0) return 'rugged'; // or dead
-        return 'alive'; // For MVP, if it exists and has supply, consider alive
+        if (data.result.token_info.supply === 0) status = 'rugged'; // or dead
+        else status = 'alive'; // For MVP, if it exists and has supply, consider alive
       }
     }
-    return 'unknown';
+    if (logoUrl) return { status, logoUrl };
+    return { status };
   } catch (err) {
-    return 'unknown';
+    return { status: 'unknown' };
   }
 }
 
@@ -118,7 +126,9 @@ export default async function accountHistoryRoutes(app: FastifyInstance) {
 
       // Resolve status for MVP (Limit to first 10 for speed)
       for (let i = 0; i < Math.min(caHistory.length, 10); i++) {
-        caHistory[i].status = await checkCaStatus(caHistory[i].mint);
+        const { status, logoUrl } = await checkCaStatus(caHistory[i].mint);
+        caHistory[i].status = status;
+        caHistory[i].logoUrl = logoUrl;
       }
 
       // Compute statistics

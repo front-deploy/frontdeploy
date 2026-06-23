@@ -66,58 +66,27 @@ async function ensurePumpFunTab(draft?: FastLaunchDraft, focusTab: boolean = fal
   
   const newTab = await chrome.tabs.create({ url: url.toString(), active: focusTab });
   
-  // Wait for tab to load so relay script is injected
-  await new Promise<void>(resolve => {
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts++;
-      chrome.tabs.sendMessage(newTab.id!, { type: "PING" }, (res) => {
-        if (!chrome.runtime.lastError && res?.pong) {
-          clearInterval(interval);
-          resolve();
-        } else if (attempts >= 30) {
-          // Timeout after 15 seconds
-          clearInterval(interval);
-          resolve();
-        }
-      });
-    }, 500);
+  // Wait for tab to be fully loaded so both relay and MAIN scripts are injected
+  await new Promise<void>((resolve) => {
+    chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
+      if (tabId === newTab.id && info.status === 'complete') {
+        chrome.tabs.onUpdated.removeListener(listener);
+        resolve();
+      }
+    });
   });
+  
+  // Brief pause to ensure MAIN script has attached message listeners
+  await new Promise(r => setTimeout(r, 1000));
   
   if (!newTab.id) throw new Error("Could not create pump.fun tab");
   return newTab.id;
 }
 
 async function handleWalletStatus(sendResponse: (res: FrontendWalletStatusResponse) => void) {
-  try {
-    const tabId = await ensurePumpFunTab(undefined, false);
-    const id = Math.random().toString(36).substring(2, 15);
-    
-    // Setup listener before sending
-    const listener = (relayMsg: any) => {
-      if (relayMsg.type === "RELAY_STATUS_RESPONSE" && relayMsg.id === id) {
-        chrome.runtime.onMessage.removeListener(listener);
-        sendResponse({
-          connected: relayMsg.connected,
-          publicKey: relayMsg.publicKey,
-          provider: relayMsg.provider
-        });
-      }
-    };
-    chrome.runtime.onMessage.addListener(listener);
-    
-    const request: BackgroundToRelayMessage = { type: "BACKGROUND_STATUS_REQUEST", id };
-    chrome.tabs.sendMessage(tabId, request);
-    
-    // Timeout
-    setTimeout(() => {
-      chrome.runtime.onMessage.removeListener(listener);
-      sendResponse({ connected: false });
-    }, 5000);
-    
-  } catch (err) {
-    sendResponse({ connected: false });
-  }
+  // Frontend already checks local session. If it falls back to background, we assume disconnected.
+  // We do NOT want to spawn a pump.fun tab just to check status.
+  sendResponse({ connected: false });
 }
 
 async function handleWalletConnect(provider: "phantom" | "solflare" | "backpack", sendResponse: (res: FrontendWalletConnectResponse) => void) {
@@ -155,27 +124,10 @@ async function handleWalletConnect(provider: "phantom" | "solflare" | "backpack"
 
 async function handleWalletDisconnect(provider: "phantom" | "solflare" | "backpack", sendResponse: (res: any) => void) {
   try {
-    const tabId = await ensurePumpFunTab(undefined, false);
-    const id = Math.random().toString(36).substring(2, 15);
-    
-    const listener = (relayMsg: any) => {
-      if (relayMsg.type === "RELAY_DISCONNECT_RESPONSE" && relayMsg.id === id) {
-        chrome.runtime.onMessage.removeListener(listener);
-        if (relayMsg.success) {
-          saveWalletSession(null).catch(console.error);
-        }
-        sendResponse({ success: relayMsg.success, error: relayMsg.error });
-      }
-    };
-    chrome.runtime.onMessage.addListener(listener);
-    
-    const request: BackgroundToRelayMessage = { type: "BACKGROUND_DISCONNECT_REQUEST", id, provider };
-    chrome.tabs.sendMessage(tabId, request);
-    
-    setTimeout(() => {
-      chrome.runtime.onMessage.removeListener(listener);
-      sendResponse({ success: false, error: "Disconnect timeout" });
-    }, 10000);
+    // Simply clear our local session to disconnect the extension.
+    // No need to spawn a pump.fun tab and force disconnect there.
+    await saveWalletSession(null);
+    sendResponse({ success: true });
   } catch (err: any) {
     sendResponse({ success: false, error: err.message });
   }

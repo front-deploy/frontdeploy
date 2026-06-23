@@ -8,12 +8,29 @@ export function WalletButton() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    getWalletStatus().then((res) => {
-      if (res.connected && res.publicKey) {
-        setConnected(true);
-        setPubkey(res.publicKey);
-      }
+    const checkStatus = () => {
+      getWalletStatus().then((res) => {
+        if (res.connected && res.publicKey) {
+          setConnected(true);
+          setPubkey(res.publicKey);
+        } else {
+          setConnected(false);
+          setPubkey("");
+        }
+      });
+    };
+
+    checkStatus();
+
+    window.addEventListener("focus", checkStatus);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) checkStatus();
     });
+
+    return () => {
+      window.removeEventListener("focus", checkStatus);
+      document.removeEventListener("visibilitychange", checkStatus); // cleanup is safe enough
+    };
   }, []);
 
   const handleConnect = async (provider: "phantom" | "solflare" | "backpack") => {

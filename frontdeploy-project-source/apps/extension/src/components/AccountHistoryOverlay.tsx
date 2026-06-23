@@ -15,6 +15,7 @@ interface CaHistoryItem {
   firstPostedAt: string;
   tweetUrl: string;
   status: string;
+  logoUrl?: string;
 }
 
 interface AccountHistoryData {
@@ -146,10 +147,13 @@ export function AccountHistoryOverlay({ handle }: { handle: string }) {
               {data.caHistory.map((ca, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#2d2d2d", padding: "6px 10px", borderRadius: "4px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    {/* Placeholder token logo */}
-                    <div style={{ width: "20px", height: "20px", borderRadius: "50%", backgroundColor: "#4b5563", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: "bold" }}>
-                      {ca.ticker ? ca.ticker.substring(0, 1).toUpperCase() : "$"}
-                    </div>
+                    {ca.logoUrl ? (
+                      <img src={ca.logoUrl} alt={ca.ticker || "Token"} style={{ width: "20px", height: "20px", borderRadius: "50%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ width: "20px", height: "20px", borderRadius: "50%", backgroundColor: "#4b5563", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", fontWeight: "bold" }}>
+                        {ca.ticker ? ca.ticker.substring(0, 1).toUpperCase() : "$"}
+                      </div>
+                    )}
                     <div>
                       <div style={{ fontWeight: 600 }}>{ca.ticker || "Unknown"}</div>
                       <a href={ca.tweetUrl} target="_blank" rel="noreferrer" style={{ fontSize: "11px", color: "#60a5fa", textDecoration: "none" }}>
