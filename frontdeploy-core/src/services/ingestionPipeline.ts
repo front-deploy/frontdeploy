@@ -134,6 +134,7 @@ export class IngestionPipeline {
       contractAddress: cas ? cas[0] : null,
       ticker: tickers ? tickers[0] : null,
       category,
+      avatarUrl: tweet.authorAvatarUrl || null,
       postedAt: tweet.ts
     };
 
@@ -152,6 +153,8 @@ export class IngestionPipeline {
         contractAddress: payload.contractAddress ?? null,
         ticker: payload.ticker ?? null,
         category: payload.category ?? null,
+        // @ts-ignore - Prisma types lag in IDE
+        avatarUrl: payload.avatarUrl ?? null,
         postedAt: payload.postedAt,
       }
     }).catch((err: any) => {

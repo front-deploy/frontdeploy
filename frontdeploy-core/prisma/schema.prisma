@@ -39,6 +39,7 @@ model KolEvent {
   contractAddress String?
   ticker          String?
   category        String?  @default("kol")
+  avatarUrl       String?
   postedAt        DateTime
   createdAt       DateTime @default(now())
 

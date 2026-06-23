@@ -95,9 +95,24 @@ export function NewsLiveFeed() {
                   href={evt.url} 
                   target="_blank" 
                   rel="noreferrer"
-                  className="text-xs font-semibold text-axiom-text hover:underline"
+                  className="flex items-center gap-2 hover:opacity-80"
                 >
-                  @{evt.authorHandle}
+                  {evt.avatarUrl ? (
+                    <img 
+                      src={evt.avatarUrl} 
+                      alt={evt.authorHandle}
+                      className="w-5 h-5 rounded-full object-cover border border-axiom-border/30"
+                    />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-axiom-border/20 flex items-center justify-center border border-axiom-border/30">
+                      <span className="text-[10px] text-axiom-muted font-bold">
+                        {evt.authorHandle.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  <span className="text-xs font-semibold text-axiom-text">
+                    @{evt.authorHandle}
+                  </span>
                 </a>
                 <span className="text-[10px] text-axiom-muted">
                   {new Date(evt.postedAt).toLocaleTimeString()}

@@ -16,6 +16,7 @@ export interface KolEventPayload {
   contractAddress?: string | null;
   ticker?: string | null;
   category?: string;
+  avatarUrl?: string | null;
   postedAt: string | Date;
 }
 
