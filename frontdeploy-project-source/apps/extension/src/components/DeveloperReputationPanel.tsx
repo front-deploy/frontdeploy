@@ -81,6 +81,9 @@ export function DeveloperReputationPanel({
     getApiSettings().then(settings => {
       if (!isActive) return;
 
+      // Set scanning state immediately when starting the check
+      setCaVerifyStatus({ state: "SCANNING...", checkedAt: new Date().toISOString() });
+
       const wsUrl = settings.backendUrl.replace(/^http/, 'ws') + '/ws/kol-alerts';
       const ws = new WebSocket(wsUrl);
       wsRef = ws;
@@ -94,7 +97,7 @@ export function DeveloperReputationPanel({
           const payload = JSON.parse(msg.data);
           if (payload.type === "ca_verification_update" && payload.data.mint === mintToVerify) {
             setCaVerifyStatus((prev) => {
-              if (prev?.state === "NOT POSTED" && payload.data.state === "CA POSTED") {
+              if ((prev?.state === "NOT POSTED" || prev?.state === "SCANNING...") && payload.data.state === "CA POSTED") {
                 setToastMessage("Dev just posted the CA!");
                 setTimeout(() => setToastMessage(""), 5000);
               }
@@ -183,6 +186,7 @@ export function DeveloperReputationPanel({
       {(() => {
         const getBadgeColor = (state: string) => {
           switch (state) {
+            case "SCANNING...": return "bg-blue-500 text-white animate-pulse";
             case "CA POSTED": return "bg-axiom-good text-white";
             case "CA MISMATCH": return "bg-orange-500 text-white";
             case "NOT POSTED": return "bg-axiom-bad text-white";

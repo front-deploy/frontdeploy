@@ -40,20 +40,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Helper to find the current active tab to inject wallet requests into
 async function ensureActiveTab(): Promise<number> {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tabs.length > 0 && tabs[0]?.id) {
-    return tabs[0].id;
-  }
+  let validTab = tabs.find(t => t.id && t.url && t.url.startsWith("http"));
+  if (validTab?.id) return validTab.id;
   
   // Fallback to any active tab if currentWindow is false (e.g., sidepanel context)
   const allTabs = await chrome.tabs.query({ active: true });
-  if (allTabs.length > 0 && allTabs[0]?.id) {
-    return allTabs[0].id;
-  }
+  validTab = allTabs.find(t => t.id && t.url && t.url.startsWith("http"));
+  if (validTab?.id) return validTab.id;
   
-  throw new Error("Could not find an active tab for wallet signing");
+  // Fallback to ANY http tab
+  const anyHttpTabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] });
+  if (anyHttpTabs.length > 0 && anyHttpTabs[0]?.id) return anyHttpTabs[0].id;
+
+  throw new Error("Please open a regular web page (e.g. pump.fun or axiom.trade) first. Extensions cannot connect to wallets on browser settings pages.");
 }
 
 async function handleWalletStatus(sendResponse: (res: FrontendWalletStatusResponse) => void) {
@@ -81,8 +82,11 @@ async function handleWalletConnect(provider: "phantom" | "solflare" | "backpack"
     chrome.runtime.onMessage.addListener(listener);
     
     const request: BackgroundToRelayMessage = { type: "BACKGROUND_CONNECT_REQUEST", id, provider };
-    chrome.tabs.sendMessage(tabId, request);
-    
+    chrome.tabs.sendMessage(tabId, request).catch(err => {
+      console.warn("Tabs sendMessage failed:", err);
+      chrome.runtime.onMessage.removeListener(listener);
+      sendResponse({ success: false, error: "Please refresh the page. The extension cannot connect to the wallet on this tab." });
+    });
     setTimeout(() => {
       chrome.runtime.onMessage.removeListener(listener);
       sendResponse({ success: false, error: "Connect timeout" });
@@ -136,7 +140,12 @@ function requestWalletSignature(
       txsBase64,
       rpcUrls
     };
-    chrome.tabs.sendMessage(tabId, request);
+    chrome.tabs.sendMessage(tabId, request).catch(err => {
+      console.warn("Tabs sendMessage sign failed:", err);
+      chrome.runtime.onMessage.removeListener(listener);
+      clearTimeout(timer);
+      reject(new Error("Please refresh the page. The extension cannot connect to the wallet on this tab."));
+    });
 
     const timer = setTimeout(() => {
       chrome.runtime.onMessage.removeListener(listener);

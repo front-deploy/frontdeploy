@@ -1,7 +1,7 @@
 {
   "name": "@axiom-intelligence/extension",
   "displayName": "Frontdeploy",
-  "version": "1.1.1",
+  "version": "1.1.4",
   "description": "X-to-pump.fun launch radar and intelligence overlay for Solana trenchers.",
   "private": true,
   "license": "MIT",
@@ -35,7 +35,7 @@
   "manifest": {
     "manifest_version": 3,
     "name": "Frontdeploy",
-    "version": "1.1.1",
+    "version": "1.1.4",
     "description": "X-to-pump.fun launch radar for Solana trenchers.",
     "permissions": [
       "storage",
@@ -46,6 +46,7 @@
       "alarms"
     ],
     "host_permissions": [
+      "<all_urls>",
       "$PLASMO_PUBLIC_FRONTDEPLOY_API_URL/*",
       "https://x.com/*",
       "https://*.x.com/*",
