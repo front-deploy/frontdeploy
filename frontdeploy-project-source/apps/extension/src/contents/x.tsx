@@ -17,7 +17,7 @@ import { hasAccess } from "../lib/holderTier"
 import { getWalletStatus } from "../lib/popup-api"
 import { WalletButton } from "../components/XWalletButton"
 import { FastLaunch } from "../components/XFastLaunch"
-import { AccountHistoryOverlay } from "../components/AccountHistoryOverlay"
+// AccountHistoryOverlay is rendered as vanilla DOM (not React) to avoid CSP/scheduler issues on x.com
 
 export const config: PlasmoCSConfig = {
   matches: [
@@ -115,7 +115,10 @@ async function scanSmartFollowers() {
   if (!match || !match[1] || ignoreList.includes(match[1].toLowerCase())) return;
   const handle = match[1];
 
-  if (window.location.href === currentProfileUrl && document.querySelector('.axiom-smart-followers-overlay')) {
+  if (window.location.href === currentProfileUrl && (
+    document.querySelector('.axiom-smart-followers-overlay') ||
+    document.querySelector('.axiom-account-history-overlay')
+  )) {
     return;
   }
   
@@ -130,14 +133,9 @@ async function scanSmartFollowers() {
   try {
     document.querySelector('.axiom-smart-followers-overlay')?.remove();
     document.querySelector('.axiom-account-history-overlay')?.remove();
-    
-    // Inject Account History React Component
-    const historyContainer = document.createElement("div");
-    historyContainer.className = "axiom-account-history-overlay";
-    header.parentElement?.appendChild(historyContainer);
-    
-    const root = createRoot(historyContainer);
-    root.render(<AccountHistoryOverlay handle={handle} />);
+
+    // Inject Account History as pure DOM (no React) to avoid CSP/scheduler blocking on x.com
+    await injectAccountHistoryDOM(header, handle);
 
     // Fetch Smart Followers
     const apiUrl = process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL || "http://localhost:8080";
@@ -180,7 +178,276 @@ async function scanSmartFollowers() {
   }
 }
 
+
+// ─── Account History DOM (no React, to avoid CSP/scheduler issues) ───────────
+
+const HISTORY_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in ms
+
+function getCachedHistory(handle: string) {
+  try {
+    const raw = sessionStorage.getItem(`axiom-history-${handle}`);
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw);
+    if (Date.now() - ts > HISTORY_CACHE_TTL) {
+      sessionStorage.removeItem(`axiom-history-${handle}`);
+      return null;
+    }
+    return data;
+  } catch { return null; }
+}
+
+function setCachedHistory(handle: string, data: unknown) {
+  try {
+    sessionStorage.setItem(`axiom-history-${handle}`, JSON.stringify({ data, ts: Date.now() }));
+  } catch {}
+}
+
+async function fetchHistoryData(handle: string) {
+  const apiUrl = process.env.PLASMO_PUBLIC_FRONTDEPLOY_API_URL || "http://localhost:8080";
+  const res = await fetch(`${apiUrl}/x-account-history/${handle}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  setCachedHistory(handle, data);
+  return data;
+}
+
+async function injectAccountHistoryDOM(header: Element, handle: string) {
+  const container = document.createElement("div");
+  container.className = "axiom-account-history-overlay";
+  container.style.cssText = `
+    margin-top:8px; padding:8px 12px; background:#1a1a1a;
+    border:1px solid #2d2d2d; border-radius:8px; font-size:13px;
+    color:#f3f4f6; font-family:system-ui,-apple-system,sans-serif;
+  `;
+  container.textContent = "⏳ Loading history...";
+  header.parentElement?.appendChild(container);
+
+  const fmt = (d: string) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const statusColor = (s: string) => s.includes("rugged") || s.includes("dead") ? "#ef4444" : s.includes("alive") ? "#22c55e" : "#eab308";
+
+  let activeTab: "identity" | "ca" = "identity";
+  let expanded = true;
+
+  const renderData = (data: {
+    identityHistory: Array<{ ts: string; handle: string; displayName: string; bio: string; avatarUrl: string }>;
+    caHistory: Array<{ mint: string; ticker: string | null; firstPostedAt: string; tweetUrl: string; status: string; logoUrl?: string }>;
+    changeCount: number;
+    isSerialSwapper: boolean;
+    trackedSince: string;
+  }) => {
+    // Filter out duplicate snapshots (same handle + displayName + bio)
+    const seen = new Set<string>();
+    const uniqueIdentityHistory = data.identityHistory.filter(snap => {
+      const key = `${snap.handle}|${snap.displayName}|${snap.bio}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    const cur = uniqueIdentityHistory[0];
+    container.style.border = data.isSerialSwapper ? "1px solid #ef4444" : "1px solid #2d2d2d";
+
+    const render = () => {
+      container.innerHTML = "";
+
+      // ── Header ──
+      const headerRow = document.createElement("div");
+      headerRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;cursor:pointer;";
+      headerRow.onclick = () => { expanded = !expanded; render(); };
+
+      const left = document.createElement("div");
+      left.style.cssText = "display:flex;align-items:center;gap:10px;";
+
+      if (cur?.avatarUrl) {
+        const img = document.createElement("img");
+        img.src = cur.avatarUrl;
+        img.alt = cur.displayName;
+        img.style.cssText = "width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid #444;flex-shrink:0;";
+        img.onerror = () => { img.style.display = "none"; };
+        left.appendChild(img);
+      }
+
+      const label = document.createElement("span");
+      label.innerHTML = `<strong style="font-weight:600">History:</strong> changed details ${data.changeCount}x${
+        data.isSerialSwapper ? ' <span style="color:#ef4444;font-weight:bold">(Serial Swapper)</span>' : ""
+      }`;
+      left.appendChild(label);
+      headerRow.appendChild(left);
+
+      // Right side: reload + toggle
+      const rightDiv = document.createElement("div");
+      rightDiv.style.cssText = "display:flex;align-items:center;gap:8px;";
+
+      const reloadBtn = document.createElement("button");
+      reloadBtn.title = "Refresh history";
+      reloadBtn.textContent = "🔄";
+      reloadBtn.style.cssText = "background:none;border:none;cursor:pointer;font-size:13px;padding:0;line-height:1;color:#9ca3af;transition:transform 0.1s;";
+      reloadBtn.onclick = async (e) => {
+        e.stopPropagation();
+        if (reloadBtn.dataset.loading === "1") return;
+        reloadBtn.dataset.loading = "1";
+        reloadBtn.style.pointerEvents = "none";
+        // Spin animation via setInterval (CSP-safe, no external CSS)
+        let angle = 0;
+        const spinInterval = setInterval(() => {
+          angle = (angle + 20) % 360;
+          reloadBtn.style.transform = `rotate(${angle}deg)`;
+        }, 30);
+        sessionStorage.removeItem(`axiom-history-${handle}`);
+        try {
+          const fresh = await fetchHistoryData(handle);
+          if (fresh && (fresh.identityHistory.length > 0 || fresh.caHistory.length > 0)) {
+            renderData(fresh);
+          }
+        } finally {
+          clearInterval(spinInterval);
+          reloadBtn.style.transform = "rotate(0deg)";
+          reloadBtn.style.pointerEvents = "auto";
+          reloadBtn.dataset.loading = "0";
+        }
+      };
+      rightDiv.appendChild(reloadBtn);
+
+      const toggle = document.createElement("span");
+      toggle.style.cssText = "font-size:11px;color:#9ca3af;";
+      toggle.textContent = expanded ? "Collapse ▲" : "Expand ▼";
+      rightDiv.appendChild(toggle);
+      headerRow.appendChild(rightDiv);
+      container.appendChild(headerRow);
+
+      if (!expanded) return;
+
+      // ── Divider ──
+      const divider = document.createElement("div");
+      divider.style.cssText = "margin-top:12px;border-top:1px solid #2d2d2d;padding-top:8px;";
+
+      // ── Tabs ──
+      const tabBar = document.createElement("div");
+      tabBar.style.cssText = "display:flex;gap:16px;margin-bottom:12px;";
+      (["identity", "ca"] as const).forEach(tab => {
+        const btn = document.createElement("button");
+        btn.style.cssText = `background:none;border:none;cursor:pointer;padding:0;font-size:12px;
+          color:${activeTab === tab ? "#60a5fa" : "#9ca3af"};
+          font-weight:${activeTab === tab ? 600 : 400};`;
+        btn.textContent = tab === "identity"
+          ? `Identity History (${uniqueIdentityHistory.length})`
+          : `CA History (${data.caHistory.length})`;
+        btn.onclick = (e) => { e.stopPropagation(); activeTab = tab; render(); };
+        tabBar.appendChild(btn);
+      });
+      divider.appendChild(tabBar);
+
+      // ── List ──
+      const list = document.createElement("div");
+      list.style.cssText = "max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;";
+
+      if (activeTab === "identity") {
+        uniqueIdentityHistory.forEach((snap, i) => {
+          const row = document.createElement("div");
+          row.style.cssText = "display:flex;gap:10px;align-items:flex-start;background:#252525;padding:8px;border-radius:6px;";
+
+          if (snap.avatarUrl) {
+            const img = document.createElement("img");
+            img.src = snap.avatarUrl;
+            img.alt = snap.displayName;
+            img.style.cssText = "width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid #444;flex-shrink:0;";
+            img.onerror = () => { img.style.display = "none"; };
+            row.appendChild(img);
+          }
+
+          const info = document.createElement("div");
+          info.style.cssText = "display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;";
+          info.innerHTML = `
+            <div style="display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;">
+              <strong style="font-size:13px;">${snap.displayName}</strong>
+              <span style="color:#9ca3af;font-size:12px;">@${snap.handle}</span>
+              <span style="font-size:11px;color:#6b7280;margin-left:auto;white-space:nowrap;">
+                ${i === uniqueIdentityHistory.length - 1 ? `Tracked since ${fmt(snap.ts)}` : fmt(snap.ts)}
+              </span>
+            </div>
+            ${snap.bio ? `<div style="font-size:11px;color:#d1d5db;margin-top:2px;font-style:italic;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${snap.bio}</div>` : ""}
+          `;
+          row.appendChild(info);
+          list.appendChild(row);
+        });
+      } else {
+        if (data.caHistory.length === 0) {
+          list.innerHTML = `<div style="color:#9ca3af;font-size:12px;">No CAs posted by this account.</div>`;
+        }
+        data.caHistory.forEach(ca => {
+          const row = document.createElement("div");
+          row.style.cssText = "display:flex;align-items:center;justify-content:space-between;background:#252525;padding:6px 10px;border-radius:6px;";
+
+          const left2 = document.createElement("div");
+          left2.style.cssText = "display:flex;align-items:center;gap:8px;";
+
+          if (ca.logoUrl) {
+            const logo = document.createElement("img");
+            logo.src = ca.logoUrl;
+            logo.alt = ca.ticker || "Token";
+            logo.style.cssText = "width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;";
+            logo.onerror = () => { logo.style.display = "none"; };
+            left2.appendChild(logo);
+          } else {
+            const ph = document.createElement("div");
+            ph.style.cssText = "width:22px;height:22px;border-radius:50%;background:#3f3f46;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;color:#fff;flex-shrink:0;";
+            ph.textContent = ca.ticker ? (ca.ticker[0] ?? "$").toUpperCase() : "$";
+            left2.appendChild(ph);
+          }
+
+          const caInfo = document.createElement("div");
+          caInfo.innerHTML = `
+            <div style="font-weight:600;font-size:13px;">${ca.ticker || "Unknown"}</div>
+            <a href="${ca.tweetUrl}" target="_blank" rel="noreferrer" style="font-size:11px;color:#60a5fa;text-decoration:none;">
+              ${ca.mint.substring(0, 6)}...${ca.mint.substring(ca.mint.length - 4)}
+            </a>
+          `;
+          left2.appendChild(caInfo);
+          row.appendChild(left2);
+
+          const right = document.createElement("div");
+          right.style.cssText = "text-align:right;";
+          right.innerHTML = `
+            <div style="color:${statusColor(ca.status)};font-weight:bold;text-transform:capitalize;font-size:12px;">${ca.status}</div>
+            <div style="font-size:10px;color:#6b7280;">${fmt(ca.firstPostedAt)}</div>
+          `;
+          row.appendChild(right);
+          list.appendChild(row);
+        });
+      }
+
+      divider.appendChild(list);
+      container.appendChild(divider);
+    };
+
+    render();
+  };
+
+  try {
+    // Try cache first — no loading flash if cached
+    const cached = getCachedHistory(handle);
+    if (cached) {
+      renderData(cached);
+      return;
+    }
+
+    // No cache — fetch from API
+    const data = await fetchHistoryData(handle);
+    if (!data || (data.identityHistory.length === 0 && data.caHistory.length === 0)) {
+      container.remove();
+      return;
+    }
+    renderData(data);
+  } catch (err) {
+    console.error("[Frontdeploy] Account history error:", err);
+    container.remove();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function injectLaunchRadarStyles() {
+
   if (!document.head) return
   if (document.querySelector("[data-axiom-launch-style]")) return
 
@@ -210,7 +477,8 @@ function mountFloatingDock() {
     </div>
   `
   document.body.append(mount)
-  createRoot(mount).render(<XLaunchDock />)
+  // XLaunchDock disabled to prevent React #130 error from CSP scheduler blocking
+  // createRoot(mount).render(<XLaunchDock />)
 }
 
 function wireActiveTweetTracking() {
@@ -254,10 +522,11 @@ function scanTweets() {
     }
 
     article.setAttribute(PROCESSED_ATTR, "true")
-    const mount = document.createElement("div")
-    mount.className = "axiom-x-launch-mount"
-    article.append(mount)
-    createRoot(mount).render(<XLaunchPanel context={context} />)
+    // XLaunchPanel disabled to prevent React #130 error from CSP scheduler blocking
+    // const mount = document.createElement("div")
+    // mount.className = "axiom-x-launch-mount"
+    // article.append(mount)
+    // createRoot(mount).render(<XLaunchPanel context={context} />)
   }
 }
 
@@ -738,6 +1007,7 @@ const LAUNCH_RADAR_CSS = `
 [data-axiom-launch-dock] .font-medium, .axiom-x-launch-mount .font-medium { font-weight: 500; }
 [data-axiom-launch-dock] .animate-pulse, .axiom-x-launch-mount .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+@keyframes axiom-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 [data-axiom-launch-dock] .overflow-y-auto, .axiom-x-launch-mount .overflow-y-auto { overflow-y: auto; }
 [data-axiom-launch-dock] .max-h-\\[300px\\], .axiom-x-launch-mount .max-h-\\[300px\\] { max-height: 300px; }
 `
