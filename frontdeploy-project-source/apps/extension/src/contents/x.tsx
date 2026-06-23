@@ -148,27 +148,105 @@ async function scanSmartFollowers() {
         // Final check before injecting to avoid race conditions
         if (document.querySelector('.axiom-smart-followers-overlay')) return;
 
-        const overlay = document.createElement("div");
-        overlay.className = "axiom-smart-followers-overlay";
-        overlay.style.marginTop = "8px";
-        overlay.style.padding = "8px 12px";
-        overlay.style.backgroundColor = "#f7f7f2";
-        overlay.style.border = "1px solid #111";
-        overlay.style.borderRadius = "4px";
-        overlay.style.fontSize = "13px";
-        overlay.style.color = "#111";
-        overlay.style.display = "flex";
-        overlay.style.alignItems = "center";
-        overlay.style.gap = "8px";
-        
-        const topHandles = followers.slice(0, 3).map((f: any) => `@${f.handle}`).join(', ');
-        
-        overlay.innerHTML = `
-          <strong style="font-weight: 700;">🧠 Smart Followers:</strong>
-          <span>Followed by ${followers.length} smart accounts (incl. ${topHandles})</span>
-        `;
-        
-        header.parentElement?.appendChild(overlay);
+        const container = document.createElement("div");
+        container.className = "axiom-smart-followers-overlay";
+        container.style.marginTop = "8px";
+        container.style.padding = "12px";
+        container.style.backgroundColor = "#151515";
+        container.style.border = "1px solid #2d2d2d";
+        container.style.borderRadius = "8px";
+        container.style.color = "#fff";
+        container.style.fontFamily = "system-ui, -apple-system, sans-serif";
+
+        let expanded = true;
+
+        const render = () => {
+          container.innerHTML = "";
+
+          const headerRow = document.createElement("div");
+          headerRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;cursor:pointer;";
+          headerRow.onclick = () => { expanded = !expanded; render(); };
+
+          const left = document.createElement("div");
+          left.style.cssText = "display:flex;align-items:center;gap:8px;";
+
+          const label = document.createElement("span");
+          label.innerHTML = `<strong style="font-weight:700;font-size:14px;">${followers.length} Smart Followers</strong>`;
+          left.appendChild(label);
+
+          const toggle = document.createElement("span");
+          toggle.style.cssText = "font-size:11px;color:#9ca3af;margin-left:4px;";
+          toggle.textContent = expanded ? "▲" : "▼";
+          left.appendChild(toggle);
+          
+          headerRow.appendChild(left);
+
+          const right = document.createElement("div");
+          right.style.cssText = "display:flex;align-items:center;gap:8px;";
+
+          const viewMore = document.createElement("span");
+          viewMore.style.cssText = "font-size:12px;color:#9ca3af;background:#2d2d2d;padding:4px 10px;border-radius:12px;";
+          viewMore.textContent = "View more >";
+          right.appendChild(viewMore);
+
+          headerRow.appendChild(right);
+          container.appendChild(headerRow);
+
+          if (!expanded) return;
+
+          const list = document.createElement("div");
+          list.style.cssText = "margin-top:12px;display:flex;flex-wrap:wrap;gap:10px;";
+
+          const colors = ['rgba(139, 92, 246, 0.6)', 'rgba(236, 72, 153, 0.6)', 'rgba(59, 130, 246, 0.6)', 'rgba(16, 185, 129, 0.6)'];
+
+          followers.forEach((f: any, i: number) => {
+            const badgeContainer = document.createElement("div");
+            badgeContainer.style.cssText = "display:flex;align-items:center;gap:6px;";
+
+            const color = colors[i % colors.length];
+
+            const avatar = document.createElement("img");
+            avatar.src = `https://unavatar.io/twitter/${f.handle}`;
+            avatar.style.cssText = "width:24px;height:24px;border-radius:50%;object-fit:cover;background:#3f3f46;flex-shrink:0;";
+            avatar.onerror = () => {
+              avatar.style.display = "none";
+              let ph = badgeContainer.querySelector('.ph-avatar') as HTMLElement;
+              if (!ph) {
+                ph = document.createElement("div");
+                ph.className = 'ph-avatar';
+                ph.style.cssText = "width:24px;height:24px;border-radius:50%;background:#3f3f46;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;color:#fff;flex-shrink:0;";
+                ph.textContent = f.handle ? f.handle[0].toUpperCase() : "?";
+                badgeContainer.insertBefore(ph, badgeContainer.firstChild);
+              }
+            };
+            badgeContainer.appendChild(avatar);
+
+            const textBox = document.createElement("div");
+            textBox.style.cssText = `border:1px solid ${color};border-radius:4px;padding:3px 8px;font-size:12px;color:#fff;background:rgba(255,255,255,0.03);display:flex;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px;`;
+
+            const handleSpan = document.createElement("span");
+            handleSpan.textContent = f.handle;
+            handleSpan.style.fontWeight = "600";
+            textBox.appendChild(handleSpan);
+
+            if (f.category) {
+              const catSpan = document.createElement("span");
+              const catText = f.category.charAt(0).toUpperCase() + f.category.slice(1);
+              catSpan.textContent = ` | ${catText}`;
+              catSpan.style.color = "#d1d5db";
+              catSpan.style.marginLeft = "4px";
+              textBox.appendChild(catSpan);
+            }
+
+            badgeContainer.appendChild(textBox);
+            list.appendChild(badgeContainer);
+          });
+
+          container.appendChild(list);
+        };
+
+        render();
+        header.parentElement?.appendChild(container);
       }
     }
   } catch (err) {
