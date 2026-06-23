@@ -48,7 +48,7 @@ export default function RootLayout({
       lang="en"
       className={`${instrumentSerif.variable} ${dmSans.variable}`}
     >
-      <body>
+      <body suppressHydrationWarning>
         <TokenGateProvider>
           {children}
         </TokenGateProvider>

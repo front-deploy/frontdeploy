@@ -65,25 +65,25 @@ export default async function LaunchHistoryPage() {
             <tbody>
               {history.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--gray-500)' }}>
+                  <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#555' }}>
                     No tokens launched yet. Be the first to deploy using the Frontdeploy extension!
                   </td>
                 </tr>
               ) : (
                 history.map((record) => (
-                  <tr key={record.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
-                    <td style={{ padding: '16px', color: 'var(--gray-800)', whiteSpace: 'nowrap' }}>
+                  <tr key={record.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td suppressHydrationWarning style={{ padding: '16px', color: '#000', whiteSpace: 'nowrap' }}>
                       {new Date(record.createdAt).toLocaleString(undefined, {
                         year: 'numeric', month: 'short', day: 'numeric',
                         hour: '2-digit', minute: '2-digit'
                       })}
                     </td>
-                    <td style={{ padding: '16px', color: 'var(--gray-800)', fontWeight: '500' }}>
+                    <td style={{ padding: '16px', color: '#000', fontWeight: '500' }}>
                       <span style={{ fontWeight: 'bold' }}>${record.ticker}</span>
                       <br/>
-                      <span style={{ fontSize: '0.85em', color: 'var(--gray-500)' }}>{record.name}</span>
+                      <span style={{ fontSize: '0.85em', color: '#555' }}>{record.name}</span>
                     </td>
-                    <td style={{ padding: '16px', color: 'var(--gray-600)', fontFamily: 'monospace' }}>
+                    <td style={{ padding: '16px', color: '#555', fontFamily: 'monospace' }}>
                       <a 
                         href={`https://pump.fun/coin/${record.mintAddress}`} 
                         target="_blank" 
@@ -93,7 +93,7 @@ export default async function LaunchHistoryPage() {
                         {record.mintAddress.slice(0, 6)}...{record.mintAddress.slice(-6)}
                       </a>
                     </td>
-                    <td style={{ padding: '16px', color: 'var(--gray-600)', fontFamily: 'monospace' }}>
+                    <td style={{ padding: '16px', color: '#555', fontFamily: 'monospace' }}>
                       {record.deployerAddress.slice(0, 6)}...{record.deployerAddress.slice(-6)}
                     </td>
                     <td style={{ padding: '16px' }}>
@@ -101,9 +101,9 @@ export default async function LaunchHistoryPage() {
                         href={`https://solscan.io/tx/${record.txHash}`} 
                         target="_blank" 
                         rel="noreferrer"
-                        style={{ color: 'var(--primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        className="tx-link"
                       >
-                        Solscan
+                        {record.txHash.slice(0, 6)}...{record.txHash.slice(-6)}
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <line x1="7" y1="17" x2="17" y2="7"></line>
                           <polyline points="7 7 17 7 17 17"></polyline>
