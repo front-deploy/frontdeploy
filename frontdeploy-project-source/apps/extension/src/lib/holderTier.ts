@@ -8,7 +8,7 @@ export type ProFeature =
   | "axiomOverlay" 
   | "firstAccess";
 
-const TIER_BASE = process.env.PLASMO_PUBLIC_TIER_BASE ? parseInt(process.env.PLASMO_PUBLIC_TIER_BASE, 10) : 2_500_000;
+const TIER_BASE = process.env.PLASMO_PUBLIC_TIER_BASE ? parseInt(process.env.PLASMO_PUBLIC_TIER_BASE, 10) : 1_000_000;
 const TIER_PLUS = process.env.PLASMO_PUBLIC_TIER_PLUS ? parseInt(process.env.PLASMO_PUBLIC_TIER_PLUS, 10) : 5_000_000;
 const TIER_FOUNDING = process.env.PLASMO_PUBLIC_TIER_FOUNDING ? parseInt(process.env.PLASMO_PUBLIC_TIER_FOUNDING, 10) : 10_000_000;
 

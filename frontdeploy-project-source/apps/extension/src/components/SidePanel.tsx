@@ -282,7 +282,7 @@ export function SidePanel() {
                 </svg>
                 <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
                 <p className="mt-2 text-sm text-axiom-muted">
-                  {gateStatus?.error || "Hold 2,500,000 $FDP (Base Tier) to unlock KOL Live Feed."}
+                  {gateStatus?.error || "Hold 1,000,000 $FDP (Base Tier) to unlock KOL Live Feed."}
                 </p>
               </div>
             ) : (
@@ -298,7 +298,7 @@ export function SidePanel() {
                 </svg>
                 <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
                 <p className="mt-2 text-sm text-axiom-muted">
-                  {gateStatus?.error || "Hold 2,500,000 $FDP (Base Tier) to unlock Live News Feed."}
+                  {gateStatus?.error || "Hold 1,000,000 $FDP (Base Tier) to unlock Live News Feed."}
                 </p>
               </div>
             ) : (
@@ -428,7 +428,7 @@ export function SidePanel() {
               </svg>
               <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
               <p className="mt-2 text-sm text-axiom-muted">
-                {gateStatus?.error || "Hold 2,500,000 $FDP (Base Tier) to unlock the realtime KOL Live Feed."}
+                {gateStatus?.error || "Hold 1,000,000 $FDP (Base Tier) to unlock the realtime KOL Live Feed."}
               </p>
             </div>
           ) : (

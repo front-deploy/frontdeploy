@@ -104,12 +104,17 @@ export async function buildPartialSignedCreateTx(
       uri: metadataUri
     },
     mint: mintKeypair.publicKey.toBase58(),
-    denominatedInSol: "true",
+    denominatedInSol: true,
     amount: Number(settings.devBuySol || 0),
     slippage: Number(settings.slippage || 5),
     priorityFee: Number(settings.priorityFee || 0.0005),
     pool: "pump"
   };
+
+  // If amount is 0, pumpportal API might prefer it to be omitted entirely or just 0, but boolean denominatedInSol is the main fix.
+  if (reqBody.amount === 0) {
+    delete (reqBody as any).amount;
+  }
 
   const response = await fetch("https://pumpportal.fun/api/trade-local", {
     method: "POST",
