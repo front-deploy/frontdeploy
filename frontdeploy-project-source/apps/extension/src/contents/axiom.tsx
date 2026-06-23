@@ -50,12 +50,55 @@ export default function AxiomCSUI() {
     const checkUrl = async (force = false) => {
       const currentUrl = window.location.href
       
-      // Try matching /token/ADDRESS, /meme/ADDRESS, ?token=ADDRESS, or just /ADDRESS
-      const match = currentUrl.match(/\/(?:token|meme)\/([1-9A-HJ-NP-Za-km-z]{32,44})/) 
+      // Extract CA from Axiom Trade URL patterns:
+      // https://axiom.trade/meme/CA
+      // https://axiom.trade/token/CA
+      // https://axiom.trade/p/CA
+      // https://axiom.trade/?token=CA
+      const match = currentUrl.match(/\/(?:token|meme|p)\/([1-9A-HJ-NP-Za-km-z]{32,44})/) 
                  || currentUrl.match(/token=([1-9A-HJ-NP-Za-km-z]{32,44})/)
                  || currentUrl.match(/\/([1-9A-HJ-NP-Za-km-z]{32,44})(?:\?|$)/)
                  
-      const tokenAddress = match ? (match[1] || null) : null
+      const tokenAddressFromUrl = match ? (match[1] || null) : null
+
+      // Also try to extract the pump.fun CA from links visible on the page.
+      // Axiom Trade shows the original pump.fun link in the token detail page.
+      // pump.fun/{CA} or pump.fun/coin/{CA}
+      const allLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>("a[href]")).map(a => a.href)
+      const pumpFunLink = allLinks.find(href => {
+        try {
+          const url = new URL(href)
+          return url.hostname === "pump.fun"
+        } catch { return false }
+      })
+      
+      // Extract CA from pump.fun link: pump.fun/{CA} or pump.fun/coin/{CA}
+      let tokenAddressFromPumpFun: string | null = null
+      if (pumpFunLink) {
+        const pumpMatch = pumpFunLink.match(/pump\.fun\/(?:coin\/)?([1-9A-HJ-NP-Za-km-z]{32,44})/)
+        if (pumpMatch?.[1]) tokenAddressFromPumpFun = pumpMatch[1]
+      }
+
+      // Fallback: scan page text for addresses ending in "pump" (pump.fun token pattern)
+      // Axiom Trade often displays the pump.fun CA as text on the page
+      let tokenAddressFromPageText: string | null = null
+      if (!tokenAddressFromPumpFun) {
+        const pageText = document.body.innerText || ""
+        // pump.fun token addresses often end in "pump" (44 chars, base58)
+        const pumpAddrMatch = pageText.match(/\b([1-9A-HJ-NP-Za-km-z]{40,44}pump)\b/)
+        if (pumpAddrMatch?.[1]) {
+          tokenAddressFromPageText = pumpAddrMatch[1]
+        } else {
+          // Also scan all link hrefs for any pump.fun token address pattern
+          for (const href of allLinks) {
+            const m = href.match(/pump\.fun\/(?:coin\/)?([1-9A-HJ-NP-Za-km-z]{32,44})/)
+            if (m?.[1]) { tokenAddressFromPageText = m[1]; break }
+          }
+        }
+      }
+
+      // Priority: pump.fun page link > page text > Axiom URL (Axiom URL may be internal ID, not CA)
+      const tokenAddress = tokenAddressFromPumpFun || tokenAddressFromPageText || tokenAddressFromUrl
       
       if (!force && currentUrl === lastUrl && !tokenAddress) return
 
@@ -99,6 +142,8 @@ export default function AxiomCSUI() {
         const context = {
             address: tokenAddress,
             source: "axiom-link" as const,
+            // Include pump.fun URL if detected from page
+            ...(pumpFunLink ? { pumpFunUrl: pumpFunLink } : {}),
             ...(websiteUrl ? { websiteUrl } : {}),
             ...(githubRepoUrl ? { githubRepoUrl } : {}),
             ...(xPostUrl ? { xPostUrl } : {}),
@@ -109,7 +154,7 @@ export default function AxiomCSUI() {
         
         // Only update if URL changed or Context scraped data changed (e.g. page finished loading)
         if (currentUrl !== lastUrl || contextKey !== lastContextKey) {
-            console.log(`[Frontdeploy] Saving new address/context to storage: ${tokenAddress}`)
+            console.log(`[Frontdeploy] Saving new address/context to storage: ${tokenAddress} (source: ${tokenAddressFromPumpFun ? 'pump.fun link' : tokenAddressFromPageText ? 'page text' : 'axiom URL'})`)
             lastUrl = currentUrl
             lastContextKey = contextKey
             
