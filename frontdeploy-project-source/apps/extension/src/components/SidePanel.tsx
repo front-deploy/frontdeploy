@@ -243,9 +243,10 @@ export function SidePanel() {
                   <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
-                <p className="mt-2 text-sm text-axiom-muted">
-                  {gateStatus?.error || "Hold 5,000,000 $FDP (Plus Tier) to unlock Axiom Pro."}
-                </p>
+                <div className="mt-2 text-sm text-axiom-muted flex flex-col gap-2">
+                  {gateStatus?.error && <p className="text-axiom-bad text-xs mb-1">{gateStatus.error}</p>}
+                  <p className="font-bold text-axiom-text bg-axiom-border/30 inline-block px-3 py-1 rounded">Required: 5M $FDP (Plus Tier)</p>
+                </div>
               </div>
             ) : !selected || selected.type !== "token" ? (
               <div className="p-6 text-center mt-8">
@@ -281,9 +282,10 @@ export function SidePanel() {
                   <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
-                <p className="mt-2 text-sm text-axiom-muted">
-                  {gateStatus?.error || "Hold 1,000,000 $FDP (Base Tier) to unlock KOL Live Feed."}
-                </p>
+                <div className="mt-2 text-sm text-axiom-muted flex flex-col gap-2">
+                  {gateStatus?.error && <p className="text-axiom-bad text-xs mb-1">{gateStatus.error}</p>}
+                  <p className="font-bold text-axiom-text bg-axiom-border/30 inline-block px-3 py-1 rounded">Required: 1M $FDP (Base Tier)</p>
+                </div>
               </div>
             ) : (
               <KolLiveFeed />
@@ -297,9 +299,10 @@ export function SidePanel() {
                   <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
-                <p className="mt-2 text-sm text-axiom-muted">
-                  {gateStatus?.error || "Hold 1,000,000 $FDP (Base Tier) to unlock Live News Feed."}
-                </p>
+                <div className="mt-2 text-sm text-axiom-muted flex flex-col gap-2">
+                  {gateStatus?.error && <p className="text-axiom-bad text-xs mb-1">{gateStatus.error}</p>}
+                  <p className="font-bold text-axiom-text bg-axiom-border/30 inline-block px-3 py-1 rounded">Required: 1M $FDP (Base Tier)</p>
+                </div>
               </div>
             ) : (
               <NewsLiveFeed />
@@ -389,9 +392,10 @@ export function SidePanel() {
                 <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
-              <p className="mt-2 text-sm text-axiom-muted">
-                {gateStatus?.error || "Hold 5,000,000 $FDP (Plus Tier) to unlock Axiom Pro."}
-              </p>
+              <div className="mt-2 text-sm text-axiom-muted flex flex-col gap-2">
+                {gateStatus?.error && <p className="text-axiom-bad text-xs mb-1">{gateStatus.error}</p>}
+                <p className="font-bold text-axiom-text bg-axiom-border/30 inline-block px-3 py-1 rounded">Required: 5M $FDP (Plus Tier)</p>
+              </div>
             </div>
           ) : !selected || selected.type !== "token" ? (
             <div className="p-6 text-center mt-8">
@@ -427,9 +431,10 @@ export function SidePanel() {
                 <path d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <h2 className="text-lg font-bold text-axiom-text">Pro Feature Locked</h2>
-              <p className="mt-2 text-sm text-axiom-muted">
-                {gateStatus?.error || "Hold 1,000,000 $FDP (Base Tier) to unlock the realtime KOL Live Feed."}
-              </p>
+              <div className="mt-2 text-sm text-axiom-muted flex flex-col gap-2">
+                {gateStatus?.error && <p className="text-axiom-bad text-xs mb-1">{gateStatus.error}</p>}
+                <p className="font-bold text-axiom-text bg-axiom-border/30 inline-block px-3 py-1 rounded">Required: 1M $FDP (Base Tier)</p>
+              </div>
             </div>
           ) : (
             <KolLiveFeed />
@@ -777,6 +782,14 @@ function PanelHeader() {
 function SidePanelFooter() {
   return (
     <footer className="mt-6 border-t border-axiom-border pt-3 text-xs font-semibold text-axiom-muted flex flex-col gap-2">
+      <div className="flex flex-col gap-1 bg-axiom-border/30 p-2 rounded-sm mb-2">
+        <span className="text-[10px] font-bold uppercase text-axiom-text">Pro Tiers</span>
+        <div className="text-[10px] flex flex-col gap-1 text-axiom-muted">
+          <span>• 1M $FDP (Base): KOL Alerts, Smart Followers</span>
+          <span>• 5M $FDP (Plus): Deployer Intel, Rug Scan, Flow Radar</span>
+          <span>• 10M $FDP (Founding): First Access</span>
+        </div>
+      </div>
       <div className="flex flex-col gap-1 bg-axiom-border/30 p-2 rounded-sm">
         <span className="text-[10px] uppercase text-axiom-text">Frontdeploy Token ($FDP)</span>
         <a 
