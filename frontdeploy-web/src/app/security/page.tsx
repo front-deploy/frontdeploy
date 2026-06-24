@@ -34,7 +34,9 @@ export default function SecurityPage() {
         <section className="security-container security-section">
           <div className="security-grid">
             <div className="security-card security-card--highlight">
-              <div className="security-card-icon">🔐</div>
+              <div className="security-card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
               <h2 className="security-card-title">Non-Custodial</h2>
               <p className="security-card-body">
                 Your private key <strong>never leaves your wallet</strong>.
@@ -45,7 +47,9 @@ export default function SecurityPage() {
             </div>
 
             <div className="security-card">
-              <div className="security-card-icon">👁️</div>
+              <div className="security-card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </div>
               <h2 className="security-card-title">Read-Only Intelligence</h2>
               <p className="security-card-body">
                 All intel features (rug scan, flow radar, KOL alerts, CA check)
@@ -55,7 +59,9 @@ export default function SecurityPage() {
             </div>
 
             <div className="security-card">
-              <div className="security-card-icon">✅</div>
+              <div className="security-card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </div>
               <h2 className="security-card-title">User Approval Required</h2>
               <p className="security-card-body">
                 Every on-chain action — token creation, dev buy — requires your
@@ -65,7 +71,9 @@ export default function SecurityPage() {
             </div>
 
             <div className="security-card">
-              <div className="security-card-icon">🗂️</div>
+              <div className="security-card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              </div>
               <h2 className="security-card-title">Local Activity Log</h2>
               <p className="security-card-body">
                 The &ldquo;Activity&rdquo; tab in the extension logs every action
@@ -82,46 +90,59 @@ export default function SecurityPage() {
           <p className="security-section-sub">
             How a token launch works — your private key never leaves your wallet.
           </p>
-          <div className="security-diagram">
-            <div className="security-diagram-row">
-              <div className="security-diagram-box security-diagram-box--primary">
-                <span>You</span>
-                <small>click Fast Launch</small>
-              </div>
-              <div className="security-diagram-arrow">→</div>
-              <div className="security-diagram-box">
-                <span>Frontdeploy</span>
-                <small>builds UNSIGNED tx</small>
-              </div>
-              <div className="security-diagram-arrow">→</div>
-              <div className="security-diagram-box security-diagram-box--wallet">
-                <span>Your Wallet</span>
-                <small>shows approval popup</small>
+          <div className="security-flow">
+            <div className="security-flow-step">
+              <div className="security-flow-number">1</div>
+              <div className="security-flow-content">
+                <strong>You Initiate Action</strong>
+                <p>You click &ldquo;Fast Launch&rdquo; or &ldquo;Dev Buy&rdquo; in the extension.</p>
               </div>
             </div>
-            <div className="security-diagram-row security-diagram-row--second">
-              <div className="security-diagram-box security-diagram-box--chain">
-                <span>Solana Network</span>
-                <small>receives signed tx</small>
-              </div>
-              <div className="security-diagram-arrow security-diagram-arrow--left">←</div>
-              <div className="security-diagram-box security-diagram-box--wallet">
-                <span>Your Wallet</span>
-                <small>signs with private key</small>
-              </div>
-              <div className="security-diagram-note">
-                🔒 Private key never leaves wallet
+            
+            <div className="security-flow-arrow">↓</div>
+            
+            <div className="security-flow-step">
+              <div className="security-flow-number">2</div>
+              <div className="security-flow-content">
+                <strong>Frontdeploy Builds Transaction</strong>
+                <p>We prepare the transaction data (UNSIGNED) via PumpPortal API.</p>
               </div>
             </div>
-            <div className="security-diagram-readonly">
-              <div className="security-diagram-box security-diagram-box--info">
-                <span>Intelligence Modules</span>
-                <small>Rug scan · KOL feed · CA check · Flow Radar</small>
+            
+            <div className="security-flow-arrow">↓</div>
+            
+            <div className="security-flow-step security-flow-step--wallet">
+              <div className="security-flow-number">3</div>
+              <div className="security-flow-content">
+                <strong>Your Wallet Prompts Approval</strong>
+                <p>Phantom, Solflare, or Backpack opens and asks you to review and sign.</p>
+                <div className="security-flow-highlight">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-top' }}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> 
+                  Private key never leaves your wallet
+                </div>
               </div>
-              <div className="security-diagram-arrow">→</div>
-              <div className="security-diagram-box">
-                <span>Public Data Only</span>
-                <small>Solana RPC · X API — read-only, no signing</small>
+            </div>
+            
+            <div className="security-flow-arrow">↓</div>
+            
+            <div className="security-flow-step security-flow-step--chain">
+              <div className="security-flow-number">4</div>
+              <div className="security-flow-content">
+                <strong>Solana Network</strong>
+                <p>The signed transaction is broadcasted securely to the blockchain.</p>
+              </div>
+            </div>
+
+            <div className="security-flow-readonly">
+              <div className="security-flow-readonly-title">Read-Only Intelligence Flow</div>
+              <div className="security-flow-step security-flow-step--info">
+                <div className="security-flow-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </div>
+                <div className="security-flow-content">
+                  <strong>Public Data Access Only</strong>
+                  <p>Modules like Rug Scan, KOL Alerts, and Flow Radar only read from Solana RPC and X API. They never request signatures or write access.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -170,10 +191,10 @@ export default function SecurityPage() {
           <div className="security-notshared">
             <h3 className="security-notshared-title">What We Never Send</h3>
             <ul className="security-notshared-list">
-              <li>❌ Private key or seed phrase</li>
-              <li>❌ Wallet balance or token holdings</li>
-              <li>❌ Activity log (stored locally only)</li>
-              <li>❌ Any data without your action triggering it</li>
+              <li><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle', color: '#ef4444' }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Private key or seed phrase</li>
+              <li><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle', color: '#ef4444' }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Wallet balance or token holdings</li>
+              <li><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle', color: '#ef4444' }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Activity log (stored locally only)</li>
+              <li><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', marginRight: '6px', verticalAlign: 'middle', color: '#ef4444' }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Any data without your action triggering it</li>
             </ul>
           </div>
         </section>
@@ -238,14 +259,18 @@ export default function SecurityPage() {
               </div>
             </div>
             <div className="security-cannotdo-item">
-              <span className="security-cannotdo-no">✗</span>
+              <span className="security-cannotdo-no">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </span>
               <div>
                 <strong>Sign transactions silently</strong>
                 <p>Every transaction shows a confirmation prompt in your wallet.</p>
               </div>
             </div>
             <div className="security-cannotdo-item">
-              <span className="security-cannotdo-no">✗</span>
+              <span className="security-cannotdo-no">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </span>
               <div>
                 <strong>Operate without your wallet connected</strong>
                 <p>All launch features require you to connect your wallet first.</p>
@@ -254,53 +279,7 @@ export default function SecurityPage() {
           </div>
         </section>
 
-        {/* Audit */}
-        <section className="security-container security-section">
-          <h2 className="security-section-title">Dependency Audits</h2>
-          <p className="security-section-sub">
-            We run <code>npm audit</code> across all packages regularly.
-          </p>
-          <div className="security-audit-grid">
-            <div className="security-audit-card">
-              <p className="security-audit-label">Extension</p>
-              <p className="security-audit-status security-audit-status--warn">
-                75 advisories (67 high, 0 critical)
-              </p>
-              <p className="security-audit-note">
-                Majority are dev-only build tooling vulnerabilities (Plasmo / webpack internals). No runtime high-severity issues affecting user data.
-              </p>
-            </div>
-            <div className="security-audit-card">
-              <p className="security-audit-label">Backend (Core)</p>
-              <p className="security-audit-status security-audit-status--warn">
-                8 advisories (3 high, 0 critical)
-              </p>
-              <p className="security-audit-note">
-                Under active review. No critical vulnerabilities found.
-              </p>
-            </div>
-            <div className="security-audit-card">
-              <p className="security-audit-label">Website (Web)</p>
-              <p className="security-audit-status security-audit-status--ok">
-                7 advisories (0 high, 0 critical)
-              </p>
-              <p className="security-audit-note">
-                All moderate or low. No action required at this time.
-              </p>
-            </div>
-          </div>
-          <p className="security-audit-footer">
-            Dependency updates automated via{" "}
-            <a
-              href="https://docs.github.com/en/code-security/dependabot"
-              target="_blank"
-              rel="noreferrer"
-            >
-              GitHub Dependabot
-            </a>
-            .
-          </p>
-        </section>
+
 
         {/* Contact */}
         <section className="security-container security-section security-contact">
