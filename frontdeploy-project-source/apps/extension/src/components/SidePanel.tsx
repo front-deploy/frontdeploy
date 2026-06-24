@@ -25,11 +25,12 @@ import { KolLiveFeed } from "./KolLiveFeed"
 import { NewsLiveFeed } from "./NewsLiveFeed"
 import { WalletButton } from "./WalletButton"
 import { AxiomProPanel } from "./AxiomProPanel"
+import { ActivityLog } from "./ActivityLog"
 import { getSettings, saveSettings, type OverlaySettings } from "../lib/storage"
 import { type Tier, hasAccess } from "../lib/holderTier"
 
 export function SidePanel() {
-  const [activeTab, setActiveTab] = useState<"radar" | "kol" | "news" | "axiom">("kol")
+  const [activeTab, setActiveTab] = useState<"radar" | "kol" | "news" | "axiom" | "activity">("kol")
   const [selected, setSelected] = useState<SelectedAddress | null>(null)
   const [launchContext, setLaunchContext] = useState<XReplyContext | null>(null)
   const [copied, setCopied] = useState("")
@@ -220,6 +221,12 @@ export function SidePanel() {
           >
             Axiom Pro
           </button>
+          <button 
+            onClick={() => setActiveTab("activity")}
+            className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'activity' ? 'text-axiom-text border-axiom-text' : 'text-axiom-muted border-transparent hover:text-axiom-text/80'}`}
+          >
+            Activity
+          </button>
         </div>
 
         {activeTab === "axiom" ? (
@@ -308,6 +315,10 @@ export function SidePanel() {
               <NewsLiveFeed />
             )}
           </div>
+        ) : activeTab === "activity" ? (
+          <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden">
+            <ActivityLog />
+          </div>
         ) : (
           <>
             <div className="-mx-4 border-b border-axiom-border pb-4 mb-4">
@@ -368,6 +379,12 @@ export function SidePanel() {
           className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'axiom' ? 'text-axiom-text border-axiom-text' : 'text-axiom-muted border-transparent hover:text-axiom-text/80'}`}
         >
           Axiom Pro
+        </button>
+        <button 
+          onClick={() => setActiveTab("activity")}
+          className={`text-sm font-bold pb-2 -mb-[9px] border-b-2 transition-colors ${activeTab === 'activity' ? 'text-axiom-text border-axiom-text' : 'text-axiom-muted border-transparent hover:text-axiom-text/80'}`}
+        >
+          Activity
         </button>
       </div>
 
@@ -439,6 +456,10 @@ export function SidePanel() {
           ) : (
             <KolLiveFeed />
           )}
+        </div>
+      ) : activeTab === "activity" ? (
+        <div className="flex-1 -mx-4 -mt-4 bg-axiom-bg relative overflow-hidden">
+          <ActivityLog />
         </div>
       ) : (
         <>

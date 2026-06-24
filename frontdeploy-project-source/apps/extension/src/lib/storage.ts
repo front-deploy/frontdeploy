@@ -180,3 +180,47 @@ async function setStorageValue<T>(key: string, value: T): Promise<void> {
     }
   }
 }
+
+// ------------------------------------
+// Activity Log (local, never sent to server)
+// ------------------------------------
+
+export type ActivityEventType = 'wallet_connected' | 'wallet_disconnected' | 'token_deployed' | 'dev_buy'
+
+export interface ActivityEntry {
+  id: string
+  type: ActivityEventType
+  timestamp: number
+  // wallet events
+  provider?: string
+  publicKey?: string
+  // launch events
+  ticker?: string
+  name?: string
+  mintAddress?: string
+  txSignature?: string
+  devBuySol?: number
+}
+
+const ACTIVITY_LOG_KEY = 'axiomIntelligence.activityLog'
+const MAX_ACTIVITY_ENTRIES = 50
+
+export async function getActivityLog(): Promise<ActivityEntry[]> {
+  const value = await getStorageValue<ActivityEntry[]>(ACTIVITY_LOG_KEY)
+  return value ?? []
+}
+
+export async function appendActivityLog(entry: Omit<ActivityEntry, 'id' | 'timestamp'>): Promise<void> {
+  const log = await getActivityLog()
+  const newEntry: ActivityEntry = {
+    ...entry,
+    id: Math.random().toString(36).substring(2, 15),
+    timestamp: Date.now()
+  }
+  const updated = [newEntry, ...log].slice(0, MAX_ACTIVITY_ENTRIES)
+  await setStorageValue(ACTIVITY_LOG_KEY, updated)
+}
+
+export async function clearActivityLog(): Promise<void> {
+  await setStorageValue(ACTIVITY_LOG_KEY, [])
+}

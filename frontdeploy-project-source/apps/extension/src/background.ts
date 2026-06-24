@@ -1,7 +1,7 @@
 import type { FrontendToBackgroundMessage, BackgroundToRelayMessage, RelayToBackgroundMessage, FastLaunchDraft, FrontendWalletStatusResponse, FrontendWalletConnectResponse, FrontendFastLaunchResponse } from "./lib/messaging";
 import { Connection, VersionedTransaction } from "@solana/web3.js";
 import { uploadMetadata, buildPartialSignedCreateTx, buildDevBuyTx } from "./lib/pumpfun";
-import { saveWalletSession, getWalletSession, getLaunchSettings } from "./lib/storage";
+import { saveWalletSession, getWalletSession, getLaunchSettings, appendActivityLog } from "./lib/storage";
 import iconUrl from "url:~assets/icon.png";
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -71,6 +71,7 @@ async function handleWalletConnect(provider: "phantom" | "solflare" | "backpack"
         chrome.runtime.onMessage.removeListener(listener);
         if (relayMsg.success && relayMsg.publicKey) {
           saveWalletSession({ connected: true, publicKey: relayMsg.publicKey, provider }).catch(console.error);
+          appendActivityLog({ type: 'wallet_connected', provider, publicKey: relayMsg.publicKey }).catch(console.error);
         }
         sendResponse({
           success: relayMsg.success,
@@ -329,6 +330,13 @@ async function handleFastLaunch(draft: FastLaunchDraft, sendResponse: (res: Fron
         mint: mintPubkey,
         signatures: createSignatures
       });
+      appendActivityLog({
+        type: 'token_deployed',
+        ticker: draft.symbol,
+        name: draft.name,
+        mintAddress: mintPubkey,
+        txSignature: createSig
+      }).catch(console.error);
     }
 
   } catch (err: any) {
