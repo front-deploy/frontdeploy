@@ -3,7 +3,6 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { uploadMetadata } from "./upload-helper.js";
-import { generatePhantomBridgeHTML } from "./bridge-generator.js";
 const server = new Server({
     name: "frontdeploy-mcp",
     version: "1.0.0",
@@ -55,25 +54,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 twitter,
                 telegram
             });
-            // 2. Generate Phantom Bridge HTML
-            const bridgeHtmlPath = await generatePhantomBridgeHTML({
-                name,
-                symbol: ticker,
-                metadataUri,
-                devBuySol: dev_buy_amount,
-                slippage: slippage || 5,
-                priorityFee: priority_fee || 0.0005
-            });
+            // 2. Return Public Launch URL
+            const launchUrl = new URL("https://frontdeploy.tech/launch");
+            launchUrl.searchParams.set("name", name);
+            launchUrl.searchParams.set("symbol", ticker);
+            launchUrl.searchParams.set("metadataUri", metadataUri);
+            if (dev_buy_amount)
+                launchUrl.searchParams.set("devBuySol", dev_buy_amount.toString());
+            if (slippage)
+                launchUrl.searchParams.set("slippage", slippage.toString());
+            if (priority_fee)
+                launchUrl.searchParams.set("priorityFee", priority_fee.toString());
             return {
                 content: [
                     {
                         type: "text",
-                        text: `Digital Asset interface prepared for ${name} (${ticker})!\n\nMetadata has been securely published: ${metadataUri}\n\nPlease click the link below to open the local bridge in your browser to finalize the process:\n\n[Open Local Bridge](file://${bridgeHtmlPath})`
+                        text: `Digital Asset interface prepared for ${name} (${ticker})!\n\nMetadata has been securely published to IPFS: ${metadataUri}\n\nPlease click the link below to open the official bridge and sign your transaction:\n\n[Open Phantom Bridge](${launchUrl.toString()})`
                     }
                 ]
             };
         }
         catch (err) {
+            console.error(`[ERROR] ${new Date().toISOString()} - ${err.message}\n${err.stack}\n`);
             return {
                 content: [
                     {
@@ -85,7 +87,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             };
         }
     }
-    throw new Error("Tool not found");
+    throw new Error(`Unknown tool: ${request.params.name}`);
 });
 async function main() {
     const transport = new StdioServerTransport();
