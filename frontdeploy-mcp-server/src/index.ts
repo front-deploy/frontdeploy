@@ -82,7 +82,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Digital Asset interface prepared for ${name} (${ticker})!\n\nMetadata has been securely published: ${metadataUri}\n\nPlease click the link below to open the local bridge in your browser to finalize the process:\n\n[Open Local Bridge](file://${bridgeHtmlPath})`
+            text: `Digital Asset interface prepared for ${name} (${ticker})!\n\nMetadata has been securely published: ${metadataUri}\n\nPlease copy the following path and paste it into your Chrome/Brave browser URL bar to open the local bridge and sign your transaction:\n\n\`file://${bridgeHtmlPath}\``
           }
         ]
       };
