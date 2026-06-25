@@ -42,7 +42,7 @@ If the package is published to the npm registry, you can directly register it in
 
 Once registered and restarted, Claude will have access to the `create_digital_asset_bridge` tool. 
 
-Simply drag and drop an image into the Claude chat and say something like:
-> "Generate a digital asset bridge using this image. Project name is 'Doggy Project', symbol is '$DOGGY', with a 0.1 initial allocation and 5% tolerance."
+Simply provide the absolute path to your image in the Claude chat and say something like:
+> "Generate a digital asset bridge. Project name is 'Doggy Project', symbol is '$DOGGY', initial allocation 0.1, and tolerance 5%. Here is the absolute image path: /Users/username/Desktop/dog.png"
 
 Claude will read the local image path, securely publish the metadata, and provide you with a clickable link to finalize the deployment in your browser.
