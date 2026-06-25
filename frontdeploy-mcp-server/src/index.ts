@@ -68,21 +68,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         telegram
       });
 
-      // 2. Generate Phantom Bridge HTML
-      const bridgeHtmlPath = await generatePhantomBridgeHTML({
-        name,
-        symbol: ticker,
-        metadataUri,
-        devBuySol: dev_buy_amount,
-        slippage: slippage || 5,
-        priorityFee: priority_fee || 0.0005
-      });
+      // 2. Return Public Launch URL
+      const launchUrl = new URL("https://frontdeploy.tech/launch");
+      launchUrl.searchParams.set("name", name);
+      launchUrl.searchParams.set("symbol", ticker);
+      launchUrl.searchParams.set("metadataUri", metadataUri);
+      if (dev_buy_amount) launchUrl.searchParams.set("devBuySol", dev_buy_amount.toString());
+      if (slippage) launchUrl.searchParams.set("slippage", slippage.toString());
+      if (priority_fee) launchUrl.searchParams.set("priorityFee", priority_fee.toString());
 
       return {
         content: [
           {
             type: "text",
-            text: `Digital Asset interface prepared for ${name} (${ticker})!\n\nMetadata has been securely published: ${metadataUri}\n\nPlease copy the following path and paste it into your Chrome/Brave browser URL bar to open the local bridge and sign your transaction:\n\n\`file://${bridgeHtmlPath}\``
+            text: `Digital Asset interface prepared for ${name} (${ticker})!\n\nMetadata has been securely published to IPFS: ${metadataUri}\n\nPlease click the link below to open the official bridge and sign your transaction:\n\n[Open Phantom Bridge](${launchUrl.toString()})`
           }
         ]
       };
