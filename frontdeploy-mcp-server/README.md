@@ -1,6 +1,6 @@
 # Frontdeploy MCP Server
 
-Standalone Model Context Protocol (MCP) server that enables AI assistants (like Claude Desktop) to trigger "Fast Launch" token deployments on Solana via Pump.fun. 
+A standalone Model Context Protocol (MCP) server that enables AI assistants (like Claude Desktop) to trigger "Fast Launch" token deployments on Solana via Pump.fun. 
 
 This server acts as a bridge, allowing the AI to construct token metadata from local images and spawn a secure local web environment for you to sign Phantom transactions manually. No private keys or `.env` configuration required!
 
@@ -13,17 +13,9 @@ This server acts as a bridge, allowing the AI to construct token metadata from l
 
 ## 🛠️ Installation & Setup
 
-1. **Install Dependencies:**
-   ```bash
-   npm install
-   ```
+If the package is published to the npm registry, you can directly register it in Claude Desktop without installing it locally.
 
-2. **Build the Project:**
-   ```bash
-   npm run build
-   ```
-
-3. **Register with Claude Desktop:**
+1. **Register with Claude Desktop:**
    Edit your Claude Desktop config file to include this MCP server.
    
    - **Mac:** `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -43,15 +35,15 @@ This server acts as a bridge, allowing the AI to construct token metadata from l
      }
    }
    ```
-   *(Catatan: Anda harus memastikan paket sudah ter-publish ke npm global jika ingin menggunakan perintah di atas di komputer lain, atau gunakan path absolut ke script lokal jika hanya berjalan lokal)*
+   *(Note: Ensure the package is published globally to npm, otherwise you will need to point `command` to `node` and `args` to the absolute local path of `./dist/index.js`)*
 
-4. **Restart Claude Desktop**
+2. **Restart Claude Desktop**
 
 ## 💡 How to Use
 
 Once registered and restarted, Claude will have access to the `fast_launch_token` tool. 
 
 Simply drag and drop an image into the Claude chat and say something like:
-> "Deploy token baru menggunakan gambar ini, dengan ticker $PEPE, dev buy 0.1 SOL, dan slippage 5%"
+> "Deploy a new token using this image, with ticker $PEPE, dev buy 0.1 SOL, and 5% slippage"
 
 Claude will read the local image path, upload the metadata to IPFS, and provide you with a secure, clickable link. Clicking the link will open the Phantom Bridge in your browser for you to review and sign the deployment transactions.
