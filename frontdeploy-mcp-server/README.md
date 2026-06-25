@@ -41,9 +41,9 @@ If the package is published to the npm registry, you can directly register it in
 
 ## 💡 How to Use
 
-Once registered and restarted, Claude will have access to the `fast_launch_token` tool. 
+Once registered and restarted, Claude will have access to the `create_digital_asset_bridge` tool. 
 
 Simply drag and drop an image into the Claude chat and say something like:
-> "Deploy a new token using this image, with ticker $PEPE, dev buy 0.1 SOL, and 5% slippage"
+> "Generate a digital asset bridge using this image. Project name is 'Doggy Project', symbol is '$DOGGY', with a 0.1 initial allocation and 5% tolerance."
 
-Claude will read the local image path, upload the metadata to IPFS, and provide you with a secure, clickable link. Clicking the link will open the Phantom Bridge in your browser for you to review and sign the deployment transactions.
+Claude will read the local image path, securely publish the metadata, and provide you with a clickable link to finalize the deployment in your browser.

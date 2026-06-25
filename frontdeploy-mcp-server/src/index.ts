@@ -21,21 +21,21 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
-        name: "fast_launch_token",
-        description: "Deploy a new meme coin using Frontdeploy's fast launch system. Prompts the user to sign a Phantom transaction via a local bridge.",
+        name: "create_digital_asset_bridge",
+        description: "Uploads an image to IPFS and generates a local web interface for the user's digital asset project.",
         inputSchema: {
           type: "object",
           properties: {
-            name: { type: "string", description: "Token name" },
-            ticker: { type: "string", description: "Token ticker symbol (e.g., $MCOIN)" },
-            description: { type: "string", description: "Token description" },
-            image_path: { type: "string", description: "Absolute path to the local image file (drag and drop the image into chat to get this path)." },
+            name: { type: "string", description: "Project name" },
+            ticker: { type: "string", description: "Asset symbol" },
+            description: { type: "string", description: "Project description" },
+            image_path: { type: "string", description: "Absolute path to the local image file" },
             website: { type: "string", description: "Website URL (optional)" },
             twitter: { type: "string", description: "Twitter URL (optional)" },
             telegram: { type: "string", description: "Telegram URL (optional)" },
-            dev_buy_amount: { type: "number", description: "Amount of SOL to buy immediately (e.g., 0.1). Defaults to 0." },
-            slippage: { type: "number", description: "Slippage percentage for dev buy (e.g., 5). Defaults to 5." },
-            priority_fee: { type: "number", description: "Priority fee in SOL (e.g., 0.0005). Defaults to 0.0005." },
+            dev_buy_amount: { type: "number", description: "Initial allocation parameter (e.g., 0.1). Defaults to 0." },
+            slippage: { type: "number", description: "Tolerance percentage (e.g., 5). Defaults to 5." },
+            priority_fee: { type: "number", description: "Network fee parameter (e.g., 0.0005). Defaults to 0.0005." },
           },
           required: ["name", "ticker", "description", "image_path", "dev_buy_amount", "slippage"],
         },
@@ -45,7 +45,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  if (request.params.name === "fast_launch_token") {
+  if (request.params.name === "create_digital_asset_bridge") {
     const { 
       name, ticker, description, image_path, 
       website, twitter, telegram, 
@@ -82,7 +82,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Fast Launch prepared for ${name} (${ticker})!\n\nMetadata has been uploaded to IPFS: ${metadataUri}\n\nPlease click the link below to open the Phantom Bridge in your browser and sign the transactions:\n\n[Open Phantom Bridge](file://${bridgeHtmlPath})`
+            text: `Digital Asset interface prepared for ${name} (${ticker})!\n\nMetadata has been securely published: ${metadataUri}\n\nPlease click the link below to open the local bridge in your browser to finalize the process:\n\n[Open Local Bridge](file://${bridgeHtmlPath})`
           }
         ]
       };
@@ -91,7 +91,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         content: [
           {
             type: "text",
-            text: `Error during fast launch preparation: ${err.message}`
+            text: `Error during bridge preparation: ${err.message}`
           }
         ],
         isError: true
