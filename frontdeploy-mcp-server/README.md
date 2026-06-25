@@ -21,7 +21,6 @@ If the package is published to the npm registry, you can directly register it in
    - **Mac:** `~/Library/Application Support/Claude/claude_desktop_config.json`
    - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
-   Add the following snippet to your configuration:
    ```json
    {
      "mcpServers": {
@@ -29,7 +28,7 @@ If the package is published to the npm registry, you can directly register it in
          "command": "npx",
          "args": [
            "-y",
-           "frontdeploy-mcp-server"
+           "frontdeploy-mcp-server@latest"
          ]
        }
      }
