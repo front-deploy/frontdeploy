@@ -34,15 +34,16 @@ This server acts as a bridge, allowing the AI to construct token metadata from l
    {
      "mcpServers": {
        "frontdeploy": {
-         "command": "node",
+         "command": "npx",
          "args": [
-           "ABSOLUTE_PATH_TO_YOUR_PROJECT/frontdeploy/frontdeploy-mcp-server/dist/index.js"
+           "-y",
+           "frontdeploy-mcp-server"
          ]
        }
      }
    }
    ```
-   *(Note: Make sure to replace `ABSOLUTE_PATH_TO_YOUR_PROJECT` with the actual absolute path to this folder on your computer.)*
+   *(Catatan: Anda harus memastikan paket sudah ter-publish ke npm global jika ingin menggunakan perintah di atas di komputer lain, atau gunakan path absolut ke script lokal jika hanya berjalan lokal)*
 
 4. **Restart Claude Desktop**
 
