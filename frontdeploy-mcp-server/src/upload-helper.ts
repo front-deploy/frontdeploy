@@ -13,8 +13,28 @@ export interface MetadataDraft {
 }
 
 export async function uploadMetadata(draft: MetadataDraft): Promise<string> {
-  // Directly use Pump.fun's IPFS API as requested
-  const imageStream = fs.createReadStream(draft.imagePath);
+  let finalImagePath = draft.imagePath;
+
+  // Handle URL inputs by downloading to a temp file
+  if (draft.imagePath.startsWith("http://") || draft.imagePath.startsWith("https://")) {
+    const tmpPath = `/tmp/mcp_download_${Date.now()}.png`;
+    const response = await axios({
+      url: draft.imagePath,
+      method: "GET",
+      responseType: "stream"
+    });
+    
+    await new Promise((resolve, reject) => {
+      const writer = fs.createWriteStream(tmpPath);
+      response.data.pipe(writer);
+      writer.on("finish", resolve);
+      writer.on("error", reject);
+    });
+    
+    finalImagePath = tmpPath;
+  }
+
+  const imageStream = fs.createReadStream(finalImagePath);
   const formData = new FormData();
   
   formData.append("file", imageStream, { filename: "image.png" });

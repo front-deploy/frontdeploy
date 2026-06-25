@@ -87,7 +87,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         ]
       };
     } catch (err: any) {
-      require("fs").appendFileSync("/tmp/mcp_debug.log", `[ERROR] ${new Date().toISOString()} - ${err.message}\n${err.stack}\n`);
+      console.error(`[ERROR] ${new Date().toISOString()} - ${err.message}\n${err.stack}\n`);
       return {
         content: [
           {
