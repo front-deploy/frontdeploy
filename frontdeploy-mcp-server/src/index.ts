@@ -87,6 +87,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         ]
       };
     } catch (err: any) {
+      require("fs").appendFileSync("/tmp/mcp_debug.log", `[ERROR] ${new Date().toISOString()} - ${err.message}\n${err.stack}\n`);
       return {
         content: [
           {
@@ -99,7 +100,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
   }
 
-  throw new Error("Tool not found");
+  throw new Error(`Unknown tool: ${request.params.name}`);
 });
 
 async function main() {
